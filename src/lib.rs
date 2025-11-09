@@ -1,3 +1,8 @@
+#[doc(hidden)]
+pub mod __private {
+    pub use paste;
+}
+
 /// Macro to define a multi-index map with unique and non-unique indexes
 #[macro_export]
 macro_rules! multi_index_map {
@@ -10,7 +15,8 @@ macro_rules! multi_index_map {
         }
     ) => {
         use std::collections::HashMap;
-        
+        use multi_index_hashmap::__private::paste;
+
         $(#[$meta])*
         #[doc = ""]
         #[doc = concat!("A map for storing `", stringify!($value_type), "` indexed by `", stringify!($storage_key_type), "`.")]
@@ -63,7 +69,7 @@ macro_rules! multi_index_map {
 
                 // Update indexes
                 let stored_value = self.storage.get(&storage_key_clone).unwrap();
-                
+
                 $(
                     let $unique_param = stored_value;
                     let unique_key = $unique_expr;

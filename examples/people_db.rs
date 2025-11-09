@@ -9,7 +9,7 @@ pub struct Person {
 }
 
 multi_index_map! {
-    
+
     /// Example documentation for the type
     pub PersonMap<Person> {
         storage_key: u32 => |p| p.id,
