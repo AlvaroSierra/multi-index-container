@@ -1,6 +1,6 @@
 #[doc(hidden)]
 pub mod __private {
-    pub use paste;
+    pub use pastey::paste;
 }
 
 /// Macro to define a multi-index map with unique and non-unique indexes
@@ -89,7 +89,7 @@ macro_rules! multi_index_map {
             }
 
             $(
-                paste::paste! {
+                paste! {
                     #[doc = concat!("Get a single value, if it exist, by indexing by the unique key `", stringify!($unique_name), "` .")]
                     pub fn [<get_by_ $unique_name>](&self, key: &$unique_key_type) -> Option<&$value_type> {
                         self.$unique_name
@@ -100,7 +100,7 @@ macro_rules! multi_index_map {
             )*
 
             $(
-                paste::paste! {
+                paste! {
                     #[doc = concat!("Get the values by indexing by the non unique key `", stringify!($non_unique_name), "` .")]
                     pub fn [<get_by_ $non_unique_name>](&self, key: &$non_unique_key_type) -> Vec<&$value_type> {
                         self.$non_unique_name
