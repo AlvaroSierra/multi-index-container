@@ -3,6 +3,13 @@ pub mod __private {
     pub use pastey::paste;
 }
 
+#[derive(thiserror::Error, Debug)]
+#[error("Unique contraint violation on {field} for value {value:?}")]
+pub struct UniqueContraintViolation<T> {
+    pub field: &'static str,
+    pub value: T,
+}
+
 /// Macro to define a multi-index map with unique and non-unique indexes
 #[macro_export]
 macro_rules! multi_index_map {
@@ -50,7 +57,7 @@ macro_rules! multi_index_map {
             }
 
             #[doc = concat!("Inserts a `", stringify!($value_type), "` and update all indexes with the new type.")]
-            pub fn insert(&mut self, value: $value_type) -> Result<(), String> {
+            pub fn insert(&mut self, value: $value_type) -> Result<(), multi_index_hashmap::UniqueContraintViolation<$value_type>> {
                 let $storage_param = &value;
                 let storage_key = $storage_expr;
 
@@ -59,7 +66,7 @@ macro_rules! multi_index_map {
                     let $unique_param = &value;
                     let unique_key = $unique_expr;
                     if self.$unique_name.contains_key(&unique_key) {
-                        return Err(format!("Unique constraint violation on {}", stringify!($unique_name)));
+                        return Err(multi_index_hashmap::UniqueContraintViolation { field: stringify!($unique_name), value } );
                     }
                 )*
 
