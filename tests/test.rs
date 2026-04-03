@@ -111,3 +111,51 @@ fn test_remove() {
     assert_eq!(map.len(), 0);
     assert!(map.get_by_email(&"alice@example.com".to_string()).is_none());
 }
+
+#[test]
+fn test_extend() {
+    let mut map = PersonMap::new();
+
+    let people = vec![
+        Person {
+            id: 1,
+            email: "alice@example.com".to_string(),
+            age: 30,
+            department: "Engineering".to_string(),
+        },
+        Person {
+            id: 2,
+            email: "bob@example.com".to_string(),
+            age: 30,
+            department: "Sales".to_string(),
+        },
+    ];
+
+    let errors = map.extend(people);
+    assert!(errors.is_empty());
+    assert_eq!(map.len(), 2);
+}
+
+#[test]
+fn test_extend_with_errors() {
+    let mut map = PersonMap::new();
+
+    let people = vec![
+        Person {
+            id: 1,
+            email: "alice@example.com".to_string(),
+            age: 30,
+            department: "Engineering".to_string(),
+        },
+        Person {
+            id: 2,
+            email: "alice@example.com".to_string(),
+            age: 25,
+            department: "Sales".to_string(),
+        },
+    ];
+
+    let errors = map.extend(people);
+    assert_eq!(errors.len(), 1);
+    assert_eq!(map.len(), 1);
+}

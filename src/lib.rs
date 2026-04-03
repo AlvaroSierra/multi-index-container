@@ -146,10 +146,23 @@ macro_rules! multi_index_map {
                 self.storage.len()
             }
 
-            pub fn is_empty(&self) -> bool {
-                self.storage.is_empty()
-            }
-        }
+             pub fn is_empty(&self) -> bool {
+                 self.storage.is_empty()
+              }
+
+             pub fn extend<I>(&mut self, iter: I) -> Vec<String>
+             where
+                 I: IntoIterator<Item = $value_type>,
+             {
+                 let mut errors = Vec::new();
+                 for value in iter {
+                     if let Err(e) = self.insert(value) {
+                         errors.push(e);
+                     }
+                 }
+                 errors
+             }
+          }
 
         impl Default for $map_name {
 
