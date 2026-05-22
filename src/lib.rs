@@ -157,7 +157,7 @@ macro_rules! multi_index_map {
                  self.storage.is_empty()
               }
 
-             pub fn extend<I>(&mut self, iter: I) -> Vec<String>
+             pub fn extend<I>(&mut self, iter: I) -> Vec<multi_index_hashmap::UniqueContraintViolation<$value_type>>
              where
                  I: IntoIterator<Item = $value_type>,
              {
