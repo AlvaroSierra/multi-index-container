@@ -1,0 +1,19 @@
+version: 2
+updates:
+  - package-ecosystem: "cargo"
+    directory: "/"
+    target-branch: "main"
+    # versioning-strategy: "increase-if-necessary" - Waiting on https://github.com/dependabot/dependabot-core/issues/4009
+    schedule:
+      interval: "weekly"
+    labels:
+      - "C-dependencies"
+    cooldown:
+      default-days: 7
+    groups:
+      all-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
