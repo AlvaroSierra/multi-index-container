@@ -60,8 +60,8 @@ macro_rules! multi_index_container {
             $(
                 $non_unique_name: std::collections::HashMap<$non_unique_key_type, std::collections::HashSet< paste! { [<$map_name StorageIndex>] } >>,
             )*
-            $( 
-                $unique_ordered_name: std::collections::BTreeMap<$unique_ordered_key_type, paste! { [<$map_name StorageIndex>] } >, 
+            $(
+                $unique_ordered_name: std::collections::BTreeMap<$unique_ordered_key_type, paste! { [<$map_name StorageIndex>] } >,
             )*
             $(
                 $non_unique_ordered_name: std::collections::BTreeMap<$non_unique_ordered_key_type, std::collections::HashSet< paste! { [<$map_name StorageIndex>] } >>,
@@ -359,7 +359,7 @@ macro_rules! multi_index_container {
              pub fn is_empty(&self) -> bool {
                  self.storage.is_empty()
             }
- 
+
              pub fn extend<I>(&mut self, iter: I) -> Vec<multi_index_container::UniqueContraintViolation<$value_type>>
              where
                  I: IntoIterator<Item = $value_type>,
@@ -421,7 +421,7 @@ macro_rules! multi_index_container {
                 pub fn get(&self) -> &$value_type {
                     self.hashmap.get(&self.entry).expect("Expected the value to exist given it is guaranteed by the mutable pointer to the hashmap while this reference is initialised.")
                 }
-                
+
                 #[doc = concat!("Modify a `", stringify!($value_type), "` such that indexes are kept up to date.")]
                 #[doc = "If a modified value would fail to be inserted, the original value remains in place while the new value gets returned as part of the error. This means it is cloned as part of this function. To avoid this clone you can use the modify_or_remove function"]
                 pub fn modify<F>(&mut self, f: F) -> Result<(), multi_index_container::UniqueContraintViolation<$value_type>>

@@ -28,21 +28,24 @@ fn make_map() -> PersonMap {
         department: "engineering".to_string(),
         seniority: 5,
         team: "backend".to_string(),
-    }).unwrap();
+    })
+    .unwrap();
     map.insert(Person {
         email: "bob@example.com".to_string(),
         age: 25,
         department: "engineering".to_string(),
         seniority: 2,
         team: "backend".to_string(),
-    }).unwrap();
+    })
+    .unwrap();
     map.insert(Person {
         email: "carol@example.com".to_string(),
         age: 30,
         department: "design".to_string(),
         seniority: 7,
         team: "frontend".to_string(),
-    }).unwrap();
+    })
+    .unwrap();
     map
 }
 
@@ -58,10 +61,22 @@ fn test_remove_by_email() {
     assert_eq!(map.len(), 2);
     assert!(map.get_by_email(&"alice@example.com".to_string()).is_none());
     // other indexes should no longer return alice
-    assert!(map.get_by_age(&30).iter().all(|p| p.email != "alice@example.com"));
-    assert!(map.get_by_department(&"engineering".to_string()).iter().all(|p| p.email != "alice@example.com"));
+    assert!(
+        map.get_by_age(&30)
+            .iter()
+            .all(|p| p.email != "alice@example.com")
+    );
+    assert!(
+        map.get_by_department(&"engineering".to_string())
+            .iter()
+            .all(|p| p.email != "alice@example.com")
+    );
     assert!(map.get_by_seniority(&5).is_none());
-    assert!(map.get_by_team(&"backend".to_string()).iter().all(|p| p.email != "alice@example.com"));
+    assert!(
+        map.get_by_team(&"backend".to_string())
+            .iter()
+            .all(|p| p.email != "alice@example.com")
+    );
 }
 
 #[test]
@@ -85,10 +100,7 @@ fn test_remove_by_age() {
 fn test_remove_by_seniority() {
     let mut map = make_map();
     // unique_ordered index: remove by seniority=7 (carol)
-    let removed = map
-        .get_mut_by_seniority(&7)
-        .unwrap()
-        .remove();
+    let removed = map.get_mut_by_seniority(&7).unwrap().remove();
     assert_eq!(removed.email, "carol@example.com");
     assert_eq!(map.len(), 2);
     assert!(map.get_by_seniority(&7).is_none());
@@ -283,7 +295,6 @@ fn test_extend_clash_unique_ordered_seniority() {
     assert!(map.get_by_email(&"eve@example.com".to_string()).is_some());
     assert!(map.get_by_email(&"dave@example.com".to_string()).is_none());
 }
-
 
 #[test]
 fn test_get_by_unique_existing() {
@@ -548,7 +559,10 @@ fn test_insert_or_overwrite_multi_clash_removes_all() {
 #[test]
 fn test_insert_or_overwrite_idempotent() {
     let mut map = make_map();
-    let carol = map.get_by_email(&"carol@example.com".to_string()).unwrap().clone();
+    let carol = map
+        .get_by_email(&"carol@example.com".to_string())
+        .unwrap()
+        .clone();
     map.insert_or_overwrite(carol.clone());
     assert_eq!(map.len(), 3);
     let fetched = map.get_by_email(&"carol@example.com".to_string()).unwrap();

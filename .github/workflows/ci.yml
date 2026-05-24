@@ -1,0 +1,27 @@
+name: Testing
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  test:
+    - name: Clone the livestream repo
+      uses: actions/checkout@v4
+
+    - name: Cache cargo registry + git + target
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry
+          ~/.cargo/git
+          target
+        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-cargo-
+
+    - name: Run cargo build Linux
+      if: matrix.os == 'ubuntu-latest'
+      run: cargo test
