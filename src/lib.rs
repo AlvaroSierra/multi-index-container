@@ -169,6 +169,10 @@ macro_rules! multi_index_map {
                  }
                  errors
              }
+
+             pub fn values(&self) -> std::collections::hash_map::Values<'_, u32, $value_type> {
+                 self.storage.values()
+             }
           }
 
         impl Default for $map_name {
