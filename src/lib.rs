@@ -117,6 +117,45 @@ macro_rules! multi_index_map {
                 Ok(())
             }
 
+            #[doc = concat!("Inserts a `", stringify!($value_type), "` overwriting any existing entries that conflict on unique indexes.")]
+            pub fn insert_or_overwrite(&mut self, value: $value_type) {
+                $(
+                    let $unique_param = &value;
+                    let unique_key = $unique_expr;
+                    if let Some(&conflicting_storage_key) = self.$unique_name.get(&unique_key) {
+                        self.remove(&conflicting_storage_key);
+                    }
+                )*
+
+                let storage_key = self.freed_storage_keys.pop().unwrap_or_else(
+                    || {
+                        let key = self.next_storage_key;
+                        self.next_storage_key = self.next_storage_key.next();
+                        key
+                    }
+                );
+
+                let storage_key_clone = storage_key;
+                self.storage.insert(storage_key, value);
+
+                let stored_value = self.storage.get(&storage_key_clone).unwrap();
+
+                $(
+                    let $unique_param = stored_value;
+                    let unique_key = $unique_expr;
+                    self.$unique_name.insert(unique_key, storage_key_clone);
+                )*
+
+                $(
+                    let $non_unique_param = stored_value;
+                    let non_unique_key = $non_unique_expr;
+                    self.$non_unique_name
+                        .entry(non_unique_key)
+                        .or_default()
+                        .insert(storage_key_clone);
+                )*
+            }
+
             $(
                 paste! {
                     #[doc = concat!("Get a single value, if it exist, by indexing by the unique key `", stringify!($unique_name), "` .")]
