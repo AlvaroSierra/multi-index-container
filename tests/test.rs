@@ -63,18 +63,15 @@ fn test_remove_by_email() {
     // other indexes should no longer return alice
     assert!(
         map.get_by_age(&30)
-            .iter()
             .all(|p| p.email != "alice@example.com")
     );
     assert!(
         map.get_by_department(&"engineering".to_string())
-            .iter()
             .all(|p| p.email != "alice@example.com")
     );
     assert!(map.get_by_seniority(&5).is_none());
     assert!(
         map.get_by_team(&"backend".to_string())
-            .iter()
             .all(|p| p.email != "alice@example.com")
     );
 }
@@ -91,7 +88,7 @@ fn test_remove_by_age() {
     assert_eq!(removed.age, 30);
 
     // carol (age=30) must still be reachable by age
-    let by_age: Vec<_> = map.get_by_age(&30);
+    let by_age: Vec<_> = map.get_by_age(&30).collect();
     assert_eq!(by_age.len(), 1);
     assert_eq!(by_age[0].email, "carol@example.com");
 }
@@ -116,7 +113,7 @@ fn test_remove_by_team() {
         .unwrap()
         .remove();
     assert_eq!(removed.team, "backend");
-    let backend: Vec<_> = map.get_by_team(&"backend".to_string());
+    let backend: Vec<_> = map.get_by_team(&"backend".to_string()).collect();
     assert_eq!(backend.len(), 1);
     assert_eq!(backend[0].email, "alice@example.com");
 }
@@ -130,7 +127,7 @@ fn test_remove_by_department() {
         .unwrap()
         .remove();
     assert_eq!(removed.department, "engineering");
-    let eng: Vec<_> = map.get_by_department(&"engineering".to_string());
+    let eng: Vec<_> = map.get_by_department(&"engineering".to_string()).collect();
     assert_eq!(eng.len(), 1);
     assert_eq!(eng[0].email, "bob@example.com");
 }
@@ -183,7 +180,7 @@ fn test_no_clash_non_unique_age() {
     });
     assert!(result.is_ok());
     assert_eq!(map.len(), 4);
-    let by_age: Vec<_> = map.get_by_age(&30);
+    let by_age: Vec<_> = map.get_by_age(&30).collect();
     assert_eq!(by_age.len(), 3);
 }
 
@@ -199,7 +196,7 @@ fn test_no_clash_non_unique_department() {
         team: "devops".to_string(),
     });
     assert!(result.is_ok());
-    let eng: Vec<_> = map.get_by_department(&"engineering".to_string());
+    let eng: Vec<_> = map.get_by_department(&"engineering".to_string()).collect();
     assert_eq!(eng.len(), 3);
 }
 
@@ -215,7 +212,7 @@ fn test_no_clash_non_unique_ordered_team() {
         team: "backend".to_string(),
     });
     assert!(result.is_ok());
-    let backend: Vec<_> = map.get_by_team(&"backend".to_string());
+    let backend: Vec<_> = map.get_by_team(&"backend".to_string()).collect();
     assert_eq!(backend.len(), 3);
 }
 
@@ -330,7 +327,7 @@ fn test_get_mut_by_unique_missing() {
 #[test]
 fn test_get_by_non_unique_multiple_results() {
     let map = make_map();
-    let persons = map.get_by_age(&30);
+    let persons: Vec<_> = map.get_by_age(&30).collect();
     assert_eq!(persons.len(), 2);
     assert!(persons.iter().any(|p| p.email == "alice@example.com"));
     assert!(persons.iter().any(|p| p.email == "carol@example.com"));
@@ -339,7 +336,7 @@ fn test_get_by_non_unique_multiple_results() {
 #[test]
 fn test_get_by_non_unique_single_result() {
     let map = make_map();
-    let persons = map.get_by_age(&25);
+    let persons: Vec<_> = map.get_by_age(&25).collect();
     assert_eq!(persons.len(), 1);
     assert_eq!(persons[0].email, "bob@example.com");
 }
@@ -347,7 +344,7 @@ fn test_get_by_non_unique_single_result() {
 #[test]
 fn test_get_by_non_unique_missing() {
     let map = make_map();
-    let persons = map.get_by_age(&99);
+    let persons: Vec<_> = map.get_by_age(&99).collect();
     assert!(persons.is_empty());
 }
 
@@ -355,14 +352,14 @@ fn test_get_by_non_unique_missing() {
 fn test_get_mut_by_non_unique_existing() {
     let mut map = make_map();
     let entries = map.get_mut_by_department(&"engineering".to_string());
-    assert!(entries.is_some());
+    assert!(entries.is_not_empty());
 }
 
 #[test]
 fn test_get_mut_by_non_unique_missing() {
     let mut map = make_map();
     let entries = map.get_mut_by_department(&"marketing".to_string());
-    assert!(entries.is_none());
+    assert!(entries.is_empty());
 }
 
 // --- unique_ordered (get_by_seniority) ---
@@ -399,7 +396,7 @@ fn test_get_mut_by_unique_ordered_missing() {
 #[test]
 fn test_get_by_non_unique_ordered_multiple_results() {
     let map = make_map();
-    let persons = map.get_by_team(&"backend".to_string());
+    let persons: Vec<_> = map.get_by_team(&"backend".to_string()).collect();
     assert_eq!(persons.len(), 2);
     assert!(persons.iter().any(|p| p.email == "alice@example.com"));
     assert!(persons.iter().any(|p| p.email == "bob@example.com"));
@@ -408,8 +405,7 @@ fn test_get_by_non_unique_ordered_multiple_results() {
 #[test]
 fn test_get_by_non_unique_ordered_single_result() {
     let map = make_map();
-    dbg!(&map);
-    let persons = map.get_by_team(&"frontend".to_string());
+    let persons: Vec<_> = map.get_by_team(&"frontend".to_string()).collect();
     assert_eq!(persons.len(), 1);
     assert_eq!(persons[0].email, "carol@example.com");
 }
@@ -417,7 +413,7 @@ fn test_get_by_non_unique_ordered_single_result() {
 #[test]
 fn test_get_by_non_unique_ordered_missing() {
     let map = make_map();
-    let persons = map.get_by_team(&"infra".to_string());
+    let persons: Vec<_> = map.get_by_team(&"infra".to_string()).collect();
     assert!(persons.is_empty());
 }
 
@@ -425,14 +421,14 @@ fn test_get_by_non_unique_ordered_missing() {
 fn test_get_mut_by_non_unique_ordered_existing() {
     let mut map = make_map();
     let entries = map.get_mut_by_team(&"backend".to_string());
-    assert!(entries.is_some());
+    assert!(entries.is_not_empty());
 }
 
 #[test]
 fn test_get_mut_by_non_unique_ordered_missing() {
     let mut map = make_map();
     let entries = map.get_mut_by_team(&"infra".to_string());
-    assert!(entries.is_none());
+    assert!(entries.is_empty());
 }
 
 #[test]
@@ -473,7 +469,7 @@ fn test_insert_or_overwrite_same_seniority() {
     // seniority=5 now points to dave
     assert_eq!(map.get_by_seniority(&5).unwrap().email, "dave@example.com");
     // alice's age bucket should no longer contain her
-    let age_30: Vec<_> = map.get_by_age(&30);
+    let age_30: Vec<_> = map.get_by_age(&30).collect();
     assert!(age_30.iter().all(|p| p.email != "alice@example.com"));
 }
 
@@ -490,7 +486,7 @@ fn test_insert_or_overwrite_no_clash() {
     assert_eq!(map.len(), 4);
     assert!(map.get_by_email(&"dave@example.com".to_string()).is_some());
     assert!(map.get_by_seniority(&10).is_some());
-    let sales: Vec<_> = map.get_by_department(&"sales".to_string());
+    let sales: Vec<_> = map.get_by_department(&"sales".to_string()).collect();
     assert_eq!(sales.len(), 1);
 }
 
@@ -509,28 +505,28 @@ fn test_insert_or_overwrite_clears_all_indexes_of_evicted_entry() {
     assert_eq!(map.len(), 3);
 
     // bob's OLD values must be gone from every index
-    let age_25: Vec<_> = map.get_by_age(&25);
+    let age_25: Vec<_> = map.get_by_age(&25).collect();
     assert!(age_25.is_empty());
 
-    let eng: Vec<_> = map.get_by_department(&"engineering".to_string());
+    let eng: Vec<_> = map.get_by_department(&"engineering".to_string()).collect();
     assert!(eng.iter().all(|p| p.email != "bob@example.com"));
 
     assert!(map.get_by_seniority(&2).is_none());
 
-    let backend: Vec<_> = map.get_by_team(&"backend".to_string());
+    let backend: Vec<_> = map.get_by_team(&"backend".to_string()).collect();
     assert!(backend.iter().all(|p| p.email != "bob@example.com"));
 
     // bob's NEW values must be reachable from every index
-    let age_50: Vec<_> = map.get_by_age(&50);
+    let age_50: Vec<_> = map.get_by_age(&50).collect();
     assert_eq!(age_50.len(), 1);
     assert_eq!(age_50[0].email, "bob@example.com");
 
     assert_eq!(map.get_by_seniority(&20).unwrap().email, "bob@example.com");
 
-    let legal: Vec<_> = map.get_by_department(&"legal".to_string());
+    let legal: Vec<_> = map.get_by_department(&"legal".to_string()).collect();
     assert_eq!(legal.len(), 1);
 
-    let compliance: Vec<_> = map.get_by_team(&"compliance".to_string());
+    let compliance: Vec<_> = map.get_by_team(&"compliance".to_string()).collect();
     assert_eq!(compliance.len(), 1);
 }
 
@@ -568,7 +564,7 @@ fn test_insert_or_overwrite_idempotent() {
     let fetched = map.get_by_email(&"carol@example.com".to_string()).unwrap();
     assert_eq!(*fetched, carol);
     assert_eq!(map.get_by_seniority(&7).unwrap().email, "carol@example.com");
-    let frontend: Vec<_> = map.get_by_team(&"frontend".to_string());
+    let frontend: Vec<_> = map.get_by_team(&"frontend".to_string()).collect();
     assert_eq!(frontend.len(), 1);
 }
 
@@ -577,7 +573,7 @@ fn test_get_by_department_team_match() {
     let map = make_map();
     // alice and bob are both engineering/backend
     let results: Vec<_> =
-        map.get_by_department_team(&"engineering".to_string(), &"backend".to_string());
+        map.get_by_department_team(&"engineering".to_string(), &"backend".to_string()).collect();
     assert_eq!(results.len(), 2);
     assert!(results.iter().any(|p| p.email == "alice@example.com"));
     assert!(results.iter().any(|p| p.email == "bob@example.com"));
@@ -588,7 +584,7 @@ fn test_get_by_department_team_no_match() {
     let map = make_map();
     // no one is in engineering/frontend
     let results: Vec<_> =
-        map.get_by_department_team(&"engineering".to_string(), &"frontend".to_string());
+        map.get_by_department_team(&"engineering".to_string(), &"frontend".to_string()).collect();
     assert!(results.is_empty());
 }
 
@@ -597,7 +593,7 @@ fn test_get_by_department_team_single_match() {
     let map = make_map();
     // only carol is design/frontend
     let results: Vec<_> =
-        map.get_by_department_team(&"design".to_string(), &"frontend".to_string());
+        map.get_by_department_team(&"design".to_string(), &"frontend".to_string()).collect();
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].email, "carol@example.com");
 }
@@ -605,7 +601,7 @@ fn test_get_by_department_team_single_match() {
 #[test]
 fn test_get_by_department_team_unknown_department() {
     let map = make_map();
-    let results: Vec<_> = map.get_by_department_team(&"hr".to_string(), &"backend".to_string());
+    let results: Vec<_> = map.get_by_department_team(&"hr".to_string(), &"backend".to_string()).collect();
     assert!(results.is_empty());
 }
 
@@ -613,7 +609,7 @@ fn test_get_by_department_team_unknown_department() {
 fn test_get_by_department_team_unknown_team() {
     let map = make_map();
     let results: Vec<_> =
-        map.get_by_department_team(&"engineering".to_string(), &"mobile".to_string());
+        map.get_by_department_team(&"engineering".to_string(), &"mobile".to_string()).collect();
     assert!(results.is_empty());
 }
 
@@ -624,7 +620,7 @@ fn test_get_by_age_department_team_single_match() {
     let map = make_map();
     // alice: age=30, engineering, backend
     let results: Vec<_> =
-        map.get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string());
+        map.get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string()).collect();
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].email, "alice@example.com");
 }
@@ -634,7 +630,7 @@ fn test_get_by_age_department_team_age_narrows_department_team() {
     let map = make_map();
     // bob is also engineering/backend but age=25, not 30; must not appear
     let results: Vec<_> =
-        map.get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string());
+        map.get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string()).collect();
     assert!(results.iter().all(|p| p.email != "bob@example.com"));
 }
 
@@ -643,7 +639,7 @@ fn test_get_by_age_department_team_no_match_wrong_age() {
     let map = make_map();
     // engineering/backend exists, but not at age=99
     let results: Vec<_> =
-        map.get_by_age_department_team(&99, &"engineering".to_string(), &"backend".to_string());
+        map.get_by_age_department_team(&99, &"engineering".to_string(), &"backend".to_string()).collect();
     assert!(results.is_empty());
 }
 
@@ -652,7 +648,7 @@ fn test_get_by_age_department_team_no_match_wrong_department() {
     let map = make_map();
     // age=30 and team=backend exist, but not with department=sales
     let results: Vec<_> =
-        map.get_by_age_department_team(&30, &"sales".to_string(), &"backend".to_string());
+        map.get_by_age_department_team(&30, &"sales".to_string(), &"backend".to_string()).collect();
     assert!(results.is_empty());
 }
 
@@ -661,7 +657,7 @@ fn test_get_by_age_department_team_no_match_wrong_team() {
     let map = make_map();
     // age=30 and department=engineering exist, but not with team=mobile
     let results: Vec<_> =
-        map.get_by_age_department_team(&30, &"engineering".to_string(), &"mobile".to_string());
+        map.get_by_age_department_team(&30, &"engineering".to_string(), &"mobile".to_string()).collect();
     assert!(results.is_empty());
 }
 
@@ -669,7 +665,7 @@ fn test_get_by_age_department_team_no_match_wrong_team() {
 fn test_get_by_age_department_team_all_unknown() {
     let map = make_map();
     let results: Vec<_> =
-        map.get_by_age_department_team(&0, &"unknown".to_string(), &"unknown".to_string());
+        map.get_by_age_department_team(&0, &"unknown".to_string(), &"unknown".to_string()).collect();
     assert!(results.is_empty());
 }
 
@@ -709,11 +705,11 @@ fn test_remove_via_get_mut_by_department_team_single_match() {
     // gone from all indexes
     assert!(map.get_by_email(&"carol@example.com".to_string()).is_none());
     assert!(map.get_by_seniority(&7).is_none());
-    let age_30: Vec<_> = map.get_by_age(&30);
+    let age_30: Vec<_> = map.get_by_age(&30).collect();
     assert!(age_30.iter().all(|p| p.email != "carol@example.com"));
-    let frontend: Vec<_> = map.get_by_team(&"frontend".to_string());
+    let frontend: Vec<_> = map.get_by_team(&"frontend".to_string()).collect();
     assert!(frontend.is_empty());
-    let design: Vec<_> = map.get_by_department(&"design".to_string());
+    let design: Vec<_> = map.get_by_department(&"design".to_string()).collect();
     assert!(design.is_empty());
 }
 
@@ -729,7 +725,7 @@ fn test_remove_via_get_mut_by_department_team_one_of_many() {
     assert_eq!(map.len(), 2);
     // the other engineering/backend person must still be reachable via the combined index
     let remaining: Vec<_> = map
-        .get_by_department_team(&"engineering".to_string(), &"backend".to_string());
+        .get_by_department_team(&"engineering".to_string(), &"backend".to_string()).collect();
     assert_eq!(remaining.len(), 1);
     assert_ne!(remaining[0].email, removed.email);
 }
@@ -751,7 +747,7 @@ fn test_remove_all_via_get_mut_by_department_team() {
     assert_eq!(map.len(), 1);
     // combined index must now be empty
     let remaining: Vec<_> = map
-        .get_by_department_team(&"engineering".to_string(), &"backend".to_string());
+        .get_by_department_team(&"engineering".to_string(), &"backend".to_string()).collect();
     assert!(remaining.is_empty());
     // carol is untouched
     assert!(map.get_by_email(&"carol@example.com".to_string()).is_some());
@@ -776,7 +772,7 @@ fn test_remove_via_get_mut_by_age_department_team_single_match() {
     // bob (age=25, engineering, backend) must be unaffected
     assert!(map.get_by_email(&"bob@example.com".to_string()).is_some());
     let eng_backend: Vec<_> = map
-        .get_by_department_team(&"engineering".to_string(), &"backend".to_string());
+        .get_by_department_team(&"engineering".to_string(), &"backend".to_string()).collect();
     assert_eq!(eng_backend.len(), 1);
     assert_eq!(eng_backend[0].email, "bob@example.com");
 }
@@ -804,11 +800,11 @@ fn test_remove_via_get_mut_by_age_department_team_clears_all_indexes() {
     assert_eq!(map.len(), 2);
     // bob gone from every index
     assert!(map.get_by_seniority(&2).is_none());
-    let age_25: Vec<_> = map.get_by_age(&25);
+    let age_25: Vec<_> = map.get_by_age(&25).collect();
     assert!(age_25.is_empty());
-    let eng: Vec<_> = map.get_by_department(&"engineering".to_string());
+    let eng: Vec<_> = map.get_by_department(&"engineering".to_string()).collect();
     assert!(eng.iter().all(|p| p.email != "bob@example.com"));
-    let backend: Vec<_> = map.get_by_team(&"backend".to_string());
+    let backend: Vec<_> = map.get_by_team(&"backend".to_string()).collect();
     assert!(backend.iter().all(|p| p.email != "bob@example.com"));
     // alice still reachable via the same combined index
     let remaining: Vec<_> = map
@@ -867,9 +863,9 @@ fn test_modify_unique_index_clash_removes_entry() {
     assert!(map.get_by_email(&"bob@example.com".to_string()).is_some());
     // alice's old indexed values must also be gone
     assert!(map.get_by_seniority(&5).is_none());
-    let age_30: Vec<_> = map.get_by_age(&30);
+    let age_30: Vec<_> = map.get_by_age(&30).collect();
     assert!(age_30.iter().all(|p| p.email != "alice@example.com"));
-    let backend: Vec<_> = map.get_by_team(&"backend".to_string());
+    let backend: Vec<_> = map.get_by_team(&"backend".to_string()).collect();
     assert!(backend.iter().all(|p| p.email != "alice@example.com"));
 }
 
@@ -917,10 +913,10 @@ fn test_modify_non_unique_index_no_clash() {
     assert!(result.is_ok());
     assert_eq!(map.len(), 3);
     // alice no longer in engineering bucket
-    let eng: Vec<_> = map.get_by_department(&"engineering".to_string());
+    let eng: Vec<_> = map.get_by_department(&"engineering".to_string()).collect();
     assert!(eng.iter().all(|p| p.email != "alice@example.com"));
     // alice now in product bucket
-    let product: Vec<_> = map.get_by_department(&"product".to_string());
+    let product: Vec<_> = map.get_by_department(&"product".to_string()).collect();
     assert_eq!(product.len(), 1);
     assert_eq!(product[0].email, "alice@example.com");
 }
@@ -935,10 +931,10 @@ fn test_modify_non_unique_ordered_index_no_clash() {
         .modify_or_remove(|p| p.team = "mobile".to_string());
     assert!(result.is_ok());
     assert_eq!(map.len(), 3);
-    let backend: Vec<_> = map.get_by_team(&"backend".to_string());
+    let backend: Vec<_> = map.get_by_team(&"backend".to_string()).collect();
     assert!(backend.iter().all(|p| p.email != "alice@example.com"));
     assert_eq!(backend.len(), 1); // only bob remains
-    let mobile: Vec<_> = map.get_by_team(&"mobile".to_string());
+    let mobile: Vec<_> = map.get_by_team(&"mobile".to_string()).collect();
     assert_eq!(mobile.len(), 1);
     assert_eq!(mobile[0].email, "alice@example.com");
 }
@@ -991,15 +987,15 @@ fn test_modify_via_get_mut_by_age_department_team() {
     assert!(result.is_ok());
     assert_eq!(map.len(), 3);
     // alice no longer in backend bucket
-    let backend: Vec<_> = map.get_by_team(&"backend".to_string());
+    let backend: Vec<_> = map.get_by_team(&"backend".to_string()).collect();
     assert!(backend.iter().all(|p| p.email != "alice@example.com"));
     // alice now in platform bucket
-    let platform: Vec<_> = map.get_by_team(&"platform".to_string());
+    let platform: Vec<_> = map.get_by_team(&"platform".to_string()).collect();
     assert_eq!(platform.len(), 1);
     assert_eq!(platform[0].email, "alice@example.com");
     // alice no longer reachable via old combined index
     let old_combined: Vec<_> = map
-        .get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string());
+        .get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string()).collect();
     assert!(old_combined.iter().all(|p| p.email != "alice@example.com"));
 }
 

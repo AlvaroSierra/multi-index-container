@@ -260,16 +260,15 @@ macro_rules! multi_index_container {
             $(
                 paste! {
                     #[doc = concat!("Get the values by indexing by the non unique key `", stringify!($non_unique_name), "` .")]
-                    pub fn [<get_by_ $non_unique_name>](&self, key: &$non_unique_key_type) -> Vec<&$value_type> {
+                    pub fn [<get_by_ $non_unique_name>]<'a>(&'a self, key: &$non_unique_key_type) -> impl Iterator<Item = &'a $value_type> {
                         self.$non_unique_name
                             .get(key)
-                            .map(|storage_keys| {
+                            .into_iter()
+                            .flat_map(|storage_keys| {
                                 storage_keys
                                     .iter()
                                     .filter_map(|sk| self.storage.get(sk))
-                                    .collect()
                             })
-                            .unwrap_or_default()
                     }
 
                     pub fn [<get_mut_by_ $non_unique_name>](&mut self, key: &$non_unique_key_type) -> [<$map_name MutEntries>] {
@@ -292,16 +291,15 @@ macro_rules! multi_index_container {
             $(
                 paste! {
                     #[doc = concat!("Get the values by indexing by the non unique ordered key `", stringify!($non_unique_ordered_name), "` .")]
-                    pub fn [<get_by_ $non_unique_ordered_name>](&self, key: &$non_unique_ordered_key_type) -> Vec<&$value_type> {
+                    pub fn [<get_by_ $non_unique_ordered_name>]<'a>(&'a self, key: &$non_unique_ordered_key_type) -> impl Iterator<Item = &'a $value_type> {
                         self.$non_unique_ordered_name
                             .get(key)
-                            .map(|storage_keys| {
+                            .into_iter()
+                            .flat_map(|storage_keys| {
                                 storage_keys
                                     .iter()
                                     .filter_map(|sk| self.storage.get(sk))
-                                    .collect()
                             })
-                            .unwrap_or_default()
                     }
                     pub fn [<get_mut_by_ $non_unique_ordered_name>](&mut self, key: &$non_unique_ordered_key_type) -> [<$map_name MutEntries>] {
                         let storage_keys = match self.$non_unique_ordered_name.get(key) {
@@ -507,12 +505,19 @@ macro_rules! multi_index_container {
                         .map(|entry| [<$map_name MutEntry>] { entry, hashmap })
                 }
 
+                #[inline]
                 pub fn count(self) -> usize {
                     self.entries.len()
                 }
 
+                #[inline]
                 pub fn is_empty(self) -> bool {
                     self.entries.len() == 0
+                }
+                
+                #[inline]
+                pub fn is_not_empty(self) -> bool {
+                    self.entries.len() != 0
                 }
 
                 pub fn collect_values(self) -> Vec<&'map $value_type> {

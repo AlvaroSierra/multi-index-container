@@ -35,36 +35,30 @@ macro_rules! __multimap_combined_getters {
         remaining: []
     ) => {
         paste! {
-            $vis fn [<get_by_ $first_name _ $second_name $(  _ $more_name)*>](
-                &self,
+            $vis fn [<get_by_ $first_name _ $second_name $(  _ $more_name)*>]<'a>(
+                &'a self,
                 $first_name: &$first_key,
                 $second_name: &$second_key,
                 $($more_name: &$more_key,)*
-            ) -> Vec<&$value_type> {
-                // Start with first index set
-                let first_set = match self.$first_name.get($first_name) {
-                    Some(s) => s,
-                    None => return vec![],
-                };
-                let second_set = match self.$second_name.get($second_name) {
-                    Some(s) => s,
-                    None => return vec![],
-                };
-                // Intersect first two
-                let mut intersection: std::collections::HashSet<_> =
-                    first_set.intersection(second_set).copied().collect();
-                // Intersect with remaining
-                $(
-                    let next_set = match self.$more_name.get($more_name) {
-                        Some(s) => s,
-                        None => return vec![],
-                    };
-                    intersection = intersection.intersection(next_set).copied().collect();
-                )*
-                // Resolve storage keys to values
-                intersection.iter()
-                    .filter_map(|key| self.storage.get(key))
-                    .collect()
+            ) -> impl Iterator<Item = &'a $value_type> {
+                let result: Option<std::collections::HashSet<_>> = (|| {
+                    let first_set = self.$first_name.get($first_name)?;
+                    let second_set = self.$second_name.get($second_name)?;
+                    let mut intersection: std::collections::HashSet<_> =
+                        first_set.intersection(second_set).copied().collect();
+                    $(
+                        let next_set = self.$more_name.get($more_name)?;
+                        intersection = intersection.intersection(next_set).copied().collect();
+                    )*
+                    Some(intersection)
+                })();
+
+                result
+                    .into_iter()
+                    .flatten()
+                    .collect::<Vec<_>>()
+                    .into_iter()
+                    .filter_map(|key| self.storage.get(&key))
             }
             $vis fn [<get_mut_by_ $first_name _ $second_name $(  _ $more_name)*>](
                     &mut self,

@@ -47,7 +47,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     })
     .unwrap();
 
-    dbg!(map.get_by_age(&30));
+    let result: Vec<_> = map.get_by_age(&30).collect();
+
+    dbg!(result);
 
     Ok(())
 }
