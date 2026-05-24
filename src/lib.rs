@@ -20,7 +20,6 @@ macro_rules! multi_index_map {
             $(non_unique $non_unique_name:ident: $non_unique_key_type:ty => |$non_unique_param:ident| $non_unique_expr:expr,)*
         }
     ) => {
-        use std::collections::{HashMap, HashSet};
         use multi_index_hashmap::__private::paste;
 
         paste! {
@@ -46,12 +45,12 @@ macro_rules! multi_index_map {
         $vis struct $map_name {
             freed_storage_keys: Vec< paste! { [<$map_name StorageIndex>] }>,
             next_storage_key: paste! { [<$map_name StorageIndex>] },
-            storage: HashMap<paste! { [<$map_name StorageIndex>] }, $value_type>,
+            storage: std::collections::HashMap<paste! { [<$map_name StorageIndex>] }, $value_type>,
             $(
-                $unique_name: HashMap<$unique_key_type, paste! { [<$map_name StorageIndex>] }>,
+                $unique_name: std::collections::HashMap<$unique_key_type, paste! { [<$map_name StorageIndex>] }>,
             )*
             $(
-                $non_unique_name: HashMap<$non_unique_key_type, HashSet< paste! { [<$map_name StorageIndex>] } >>,
+                $non_unique_name: std::collections::HashMap<$non_unique_key_type, std::collections::HashSet< paste! { [<$map_name StorageIndex>] } >>,
             )*
         }
 
@@ -60,12 +59,12 @@ macro_rules! multi_index_map {
                 Self {
                     freed_storage_keys: Vec::new(),
                     next_storage_key: Default::default(),
-                    storage: HashMap::new(),
+                    storage: std::collections::HashMap::new(),
                     $(
-                        $unique_name: HashMap::new(),
+                        $unique_name: std::collections::HashMap::new(),
                     )*
                     $(
-                        $non_unique_name: HashMap::new(),
+                        $non_unique_name: std::collections::HashMap::new(),
                     )*
                 }
             }
@@ -94,8 +93,8 @@ macro_rules! multi_index_map {
                 );
 
                 // Insert into storage
-                let storage_key_clone = storage_key.clone();
-                self.storage.insert(storage_key.clone(), value);
+                let storage_key_clone = storage_key;
+                self.storage.insert(storage_key, value);
 
                 // Update indexes
                 let stored_value = self.storage.get(&storage_key_clone).unwrap();
@@ -103,7 +102,7 @@ macro_rules! multi_index_map {
                 $(
                     let $unique_param = stored_value;
                     let unique_key = $unique_expr;
-                    self.$unique_name.insert(unique_key, storage_key_clone.clone());
+                    self.$unique_name.insert(unique_key, storage_key_clone);
                 )*
 
                 $(
@@ -112,7 +111,7 @@ macro_rules! multi_index_map {
                     self.$non_unique_name
                         .entry(non_unique_key)
                         .or_default()
-                        .insert(storage_key_clone.clone());
+                        .insert(storage_key_clone);
                 )*
 
                 Ok(())
@@ -200,7 +199,7 @@ macro_rules! multi_index_map {
              pub fn is_empty(&self) -> bool {
                  self.storage.is_empty()
             }
-
+ 
              pub fn extend<I>(&mut self, iter: I) -> Vec<multi_index_hashmap::UniqueContraintViolation<$value_type>>
              where
                  I: IntoIterator<Item = $value_type>,
