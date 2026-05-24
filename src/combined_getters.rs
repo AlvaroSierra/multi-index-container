@@ -66,6 +66,27 @@ macro_rules! __multimap_combined_getters {
                     .filter_map(|key| self.storage.get(key))
                     .collect()
             }
+            $vis fn [<get_mut_by_ $first_name _ $second_name $(  _ $more_name)*>](
+                    &mut self,
+                    $first_name: &$first_key,
+                    $second_name: &$second_key,
+                    $($more_name: &$more_key,)*
+                ) -> Option<[<$map_name MutEntries>]<'_>> {
+                    let first_set = self.$first_name.get($first_name)?;
+                    let second_set = self.$second_name.get($second_name)?;
+                    // We must clone into an owned set because we need &mut self below
+                    let mut intersection: std::collections::HashSet<_> =
+                        first_set.intersection(second_set).copied().collect();
+                    $(
+                        let next_set = self.$more_name.get($more_name)?;
+                        intersection = intersection.intersection(next_set).copied().collect();
+                    )*
+                    let keys: Vec<_> = intersection.into_iter().collect();
+                    Some([<$map_name MutEntries>] {
+                        entries: keys.into_iter(),
+                        hashmap: self,
+                    })
+            }
         }
     };
     // Skip: selected has fewer than 2 fields and no remaining — emit nothing

@@ -576,8 +576,8 @@ fn test_insert_or_overwrite_idempotent() {
 fn test_get_by_department_team_match() {
     let map = make_map();
     // alice and bob are both engineering/backend
-    let results: Vec<_> = map
-        .get_by_department_team(&"engineering".to_string(), &"backend".to_string());
+    let results: Vec<_> =
+        map.get_by_department_team(&"engineering".to_string(), &"backend".to_string());
     assert_eq!(results.len(), 2);
     assert!(results.iter().any(|p| p.email == "alice@example.com"));
     assert!(results.iter().any(|p| p.email == "bob@example.com"));
@@ -587,8 +587,8 @@ fn test_get_by_department_team_match() {
 fn test_get_by_department_team_no_match() {
     let map = make_map();
     // no one is in engineering/frontend
-    let results: Vec<_> = map
-        .get_by_department_team(&"engineering".to_string(), &"frontend".to_string());
+    let results: Vec<_> =
+        map.get_by_department_team(&"engineering".to_string(), &"frontend".to_string());
     assert!(results.is_empty());
 }
 
@@ -596,8 +596,8 @@ fn test_get_by_department_team_no_match() {
 fn test_get_by_department_team_single_match() {
     let map = make_map();
     // only carol is design/frontend
-    let results: Vec<_> = map
-        .get_by_department_team(&"design".to_string(), &"frontend".to_string());
+    let results: Vec<_> =
+        map.get_by_department_team(&"design".to_string(), &"frontend".to_string());
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].email, "carol@example.com");
 }
@@ -605,16 +605,15 @@ fn test_get_by_department_team_single_match() {
 #[test]
 fn test_get_by_department_team_unknown_department() {
     let map = make_map();
-    let results: Vec<_> = map
-        .get_by_department_team(&"hr".to_string(), &"backend".to_string());
+    let results: Vec<_> = map.get_by_department_team(&"hr".to_string(), &"backend".to_string());
     assert!(results.is_empty());
 }
 
 #[test]
 fn test_get_by_department_team_unknown_team() {
     let map = make_map();
-    let results: Vec<_> = map
-        .get_by_department_team(&"engineering".to_string(), &"mobile".to_string());
+    let results: Vec<_> =
+        map.get_by_department_team(&"engineering".to_string(), &"mobile".to_string());
     assert!(results.is_empty());
 }
 
@@ -624,8 +623,8 @@ fn test_get_by_department_team_unknown_team() {
 fn test_get_by_age_department_team_single_match() {
     let map = make_map();
     // alice: age=30, engineering, backend
-    let results: Vec<_> = map
-        .get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string());
+    let results: Vec<_> =
+        map.get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string());
     assert_eq!(results.len(), 1);
     assert_eq!(results[0].email, "alice@example.com");
 }
@@ -634,8 +633,8 @@ fn test_get_by_age_department_team_single_match() {
 fn test_get_by_age_department_team_age_narrows_department_team() {
     let map = make_map();
     // bob is also engineering/backend but age=25, not 30; must not appear
-    let results: Vec<_> = map
-        .get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string());
+    let results: Vec<_> =
+        map.get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string());
     assert!(results.iter().all(|p| p.email != "bob@example.com"));
 }
 
@@ -643,8 +642,8 @@ fn test_get_by_age_department_team_age_narrows_department_team() {
 fn test_get_by_age_department_team_no_match_wrong_age() {
     let map = make_map();
     // engineering/backend exists, but not at age=99
-    let results: Vec<_> = map
-        .get_by_age_department_team(&99, &"engineering".to_string(), &"backend".to_string());
+    let results: Vec<_> =
+        map.get_by_age_department_team(&99, &"engineering".to_string(), &"backend".to_string());
     assert!(results.is_empty());
 }
 
@@ -652,8 +651,8 @@ fn test_get_by_age_department_team_no_match_wrong_age() {
 fn test_get_by_age_department_team_no_match_wrong_department() {
     let map = make_map();
     // age=30 and team=backend exist, but not with department=sales
-    let results: Vec<_> = map
-        .get_by_age_department_team(&30, &"sales".to_string(), &"backend".to_string());
+    let results: Vec<_> =
+        map.get_by_age_department_team(&30, &"sales".to_string(), &"backend".to_string());
     assert!(results.is_empty());
 }
 
@@ -661,16 +660,16 @@ fn test_get_by_age_department_team_no_match_wrong_department() {
 fn test_get_by_age_department_team_no_match_wrong_team() {
     let map = make_map();
     // age=30 and department=engineering exist, but not with team=mobile
-    let results: Vec<_> = map
-        .get_by_age_department_team(&30, &"engineering".to_string(), &"mobile".to_string());
+    let results: Vec<_> =
+        map.get_by_age_department_team(&30, &"engineering".to_string(), &"mobile".to_string());
     assert!(results.is_empty());
 }
 
 #[test]
 fn test_get_by_age_department_team_all_unknown() {
     let map = make_map();
-    let results: Vec<_> = map
-        .get_by_age_department_team(&0, &"unknown".to_string(), &"unknown".to_string());
+    let results: Vec<_> =
+        map.get_by_age_department_team(&0, &"unknown".to_string(), &"unknown".to_string());
     assert!(results.is_empty());
 }
 
@@ -693,4 +692,340 @@ fn test_combined_subset_of_department_team() {
     for email in &by_age_dept_team {
         assert!(by_dept_team.contains(email));
     }
+}
+
+// --- get_mut_by_department_team ---
+#[test]
+fn test_remove_via_get_mut_by_department_team_single_match() {
+    let mut map = make_map();
+    // design/frontend only has carol; remove her
+    let removed = map
+        .get_mut_by_department_team(&"design".to_string(), &"frontend".to_string())
+        .unwrap()
+        .first()
+        .unwrap()
+        .remove();
+    assert_eq!(removed.email, "carol@example.com");
+    assert_eq!(map.len(), 2);
+    // gone from all indexes
+    assert!(map.get_by_email(&"carol@example.com".to_string()).is_none());
+    assert!(map.get_by_seniority(&7).is_none());
+    let age_30: Vec<_> = map.get_by_age(&30);
+    assert!(age_30.iter().all(|p| p.email != "carol@example.com"));
+    let frontend: Vec<_> = map.get_by_team(&"frontend".to_string());
+    assert!(frontend.is_empty());
+    let design: Vec<_> = map.get_by_department(&"design".to_string());
+    assert!(design.is_empty());
+}
+
+#[test]
+fn test_remove_via_get_mut_by_department_team_one_of_many() {
+    let mut map = make_map();
+    // engineering/backend has alice and bob; remove only the first result
+    let removed = map
+        .get_mut_by_department_team(&"engineering".to_string(), &"backend".to_string())
+        .unwrap()
+        .first()
+        .unwrap()
+        .remove();
+    assert_eq!(map.len(), 2);
+    // the other engineering/backend person must still be reachable via the combined index
+    let remaining: Vec<_> = map
+        .get_by_department_team(&"engineering".to_string(), &"backend".to_string());
+    assert_eq!(remaining.len(), 1);
+    assert_ne!(remaining[0].email, removed.email);
+}
+
+#[test]
+fn test_remove_all_via_get_mut_by_department_team() {
+    let mut map = make_map();
+    // drain all engineering/backend entries
+    let emails: Vec<String> = map
+        .get_mut_by_department_team(&"engineering".to_string(), &"backend".to_string())
+        .unwrap()
+        .remove_all()
+        .into_iter()
+        .map(|x| x.email)
+        .collect()
+        ;
+    assert_eq!(emails.len(), 2);
+    assert!(emails.contains(&"alice@example.com".to_string()));
+    assert!(emails.contains(&"bob@example.com".to_string()));
+    assert_eq!(map.len(), 1);
+    // combined index must now be empty
+    let remaining: Vec<_> = map
+        .get_by_department_team(&"engineering".to_string(), &"backend".to_string());
+    assert!(remaining.is_empty());
+    // carol is untouched
+    assert!(map.get_by_email(&"carol@example.com".to_string()).is_some());
+}
+
+// --- get_mut_by_age_department_team ---
+
+#[test]
+fn test_remove_via_get_mut_by_age_department_team_single_match() {
+    let mut map = make_map();
+    // age=30, engineering, backend matches only alice (bob is age=25)
+    let removed = map
+        .get_mut_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string())
+        .unwrap()
+        .first()
+        .unwrap()
+        .remove();
+    assert_eq!(removed.email, "alice@example.com");
+    assert_eq!(map.len(), 2);
+    // gone from all indexes
+    assert!(map.get_by_email(&"alice@example.com".to_string()).is_none());
+    assert!(map.get_by_seniority(&5).is_none());
+    // bob (age=25, engineering, backend) must be unaffected
+    assert!(map.get_by_email(&"bob@example.com".to_string()).is_some());
+    let eng_backend: Vec<_> = map
+        .get_by_department_team(&"engineering".to_string(), &"backend".to_string());
+    assert_eq!(eng_backend.len(), 1);
+    assert_eq!(eng_backend[0].email, "bob@example.com");
+}
+
+#[test]
+fn test_remove_via_get_mut_by_age_department_team_no_match() {
+    let mut map = make_map();
+    // age=99 matches nobody; iterator is empty, map unchanged
+    let iter =
+        map.get_mut_by_age_department_team(&99, &"engineering".to_string(), &"backend".to_string());
+    assert!(iter.is_none());
+    assert_eq!(map.len(), 3);
+}
+
+#[test]
+fn test_remove_via_get_mut_by_age_department_team_clears_all_indexes() {
+    let mut map = make_map();
+    // remove bob via age=25, engineering, backend
+    let removed = map
+        .get_mut_by_age_department_team(&25, &"engineering".to_string(), &"backend".to_string())
+        .unwrap()
+        .first()
+        .unwrap()
+        .remove();
+    assert_eq!(removed.email, "bob@example.com");
+    assert_eq!(map.len(), 2);
+    // bob gone from every index
+    assert!(map.get_by_seniority(&2).is_none());
+    let age_25: Vec<_> = map.get_by_age(&25);
+    assert!(age_25.is_empty());
+    let eng: Vec<_> = map.get_by_department(&"engineering".to_string());
+    assert!(eng.iter().all(|p| p.email != "bob@example.com"));
+    let backend: Vec<_> = map.get_by_team(&"backend".to_string());
+    assert!(backend.iter().all(|p| p.email != "bob@example.com"));
+    // alice still reachable via the same combined index
+    let remaining: Vec<_> = map
+        .get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string())
+        .into_iter()
+        .map(|e| e.email.clone())
+        .collect();
+    assert_eq!(remaining, vec!["alice@example.com".to_string()]);
+}
+
+// --- modify_or_remove via get_mut_by_email (unique index) ---
+
+#[test]
+fn test_modify_non_indexed_field() {
+    let mut map = make_map();
+    // modifying a field that isn't part of any index is a simple in-place update
+    let result = map
+        .get_mut_by_email(&"alice@example.com".to_string())
+        .unwrap()
+        .modify_or_remove(|p| p.age = 99);
+    assert!(result.is_ok());
+    assert_eq!(map.len(), 3);
+    let alice = map.get_by_email(&"alice@example.com".to_string()).unwrap();
+    assert_eq!(alice.age, 99);
+}
+
+#[test]
+fn test_modify_unique_index_to_unused_value() {
+    let mut map = make_map();
+    // changing email to a value not held by anyone else succeeds
+    let result = map
+        .get_mut_by_email(&"alice@example.com".to_string())
+        .unwrap()
+        .modify_or_remove(|p| p.email = "alice-new@example.com".to_string());
+    assert!(result.is_ok());
+    assert_eq!(map.len(), 3);
+    assert!(map.get_by_email(&"alice@example.com".to_string()).is_none());
+    assert!(
+        map.get_by_email(&"alice-new@example.com".to_string())
+            .is_some()
+    );
+}
+
+#[test]
+fn test_modify_unique_index_clash_removes_entry() {
+    let mut map = make_map();
+    // changing alice's email to bob's causes a clash on re-insert;
+    // alice is permanently removed (not rolled back)
+    let result = map
+        .get_mut_by_email(&"alice@example.com".to_string())
+        .unwrap()
+        .modify_or_remove(|p| p.email = "bob@example.com".to_string());
+    assert!(result.is_err());
+    assert_eq!(map.len(), 2); // alice gone, bob untouched
+    assert!(map.get_by_email(&"alice@example.com".to_string()).is_none());
+    assert!(map.get_by_email(&"bob@example.com".to_string()).is_some());
+    // alice's old indexed values must also be gone
+    assert!(map.get_by_seniority(&5).is_none());
+    let age_30: Vec<_> = map.get_by_age(&30);
+    assert!(age_30.iter().all(|p| p.email != "alice@example.com"));
+    let backend: Vec<_> = map.get_by_team(&"backend".to_string());
+    assert!(backend.iter().all(|p| p.email != "alice@example.com"));
+}
+
+#[test]
+fn test_modify_unique_ordered_index_to_unused_value() {
+    let mut map = make_map();
+    // changing alice's seniority to a value no one else holds succeeds
+    let result = map
+        .get_mut_by_email(&"alice@example.com".to_string())
+        .unwrap()
+        .modify_or_remove(|p| p.seniority = 50);
+    assert!(result.is_ok());
+    assert_eq!(map.len(), 3);
+    assert!(map.get_by_seniority(&5).is_none());
+    assert_eq!(
+        map.get_by_seniority(&50).unwrap().email,
+        "alice@example.com"
+    );
+}
+
+#[test]
+fn test_modify_unique_ordered_index_clash_removes_entry() {
+    let mut map = make_map();
+    // changing alice's seniority to carol's (7) causes a clash; alice is lost
+    let result = map
+        .get_mut_by_email(&"alice@example.com".to_string())
+        .unwrap()
+        .modify_or_remove(|p| p.seniority = 7);
+    assert!(result.is_err());
+    assert_eq!(map.len(), 2);
+    assert!(map.get_by_email(&"alice@example.com".to_string()).is_none());
+    // carol's seniority=7 still points to carol
+    assert_eq!(map.get_by_seniority(&7).unwrap().email, "carol@example.com");
+    assert!(map.get_by_seniority(&5).is_none());
+}
+
+#[test]
+fn test_modify_non_unique_index_no_clash() {
+    let mut map = make_map();
+    // moving alice from engineering to a new department; no clash possible on non-unique index
+    let result = map
+        .get_mut_by_email(&"alice@example.com".to_string())
+        .unwrap()
+        .modify_or_remove(|p| p.department = "product".to_string());
+    assert!(result.is_ok());
+    assert_eq!(map.len(), 3);
+    // alice no longer in engineering bucket
+    let eng: Vec<_> = map.get_by_department(&"engineering".to_string());
+    assert!(eng.iter().all(|p| p.email != "alice@example.com"));
+    // alice now in product bucket
+    let product: Vec<_> = map.get_by_department(&"product".to_string());
+    assert_eq!(product.len(), 1);
+    assert_eq!(product[0].email, "alice@example.com");
+}
+
+#[test]
+fn test_modify_non_unique_ordered_index_no_clash() {
+    let mut map = make_map();
+    // moving alice from backend to a new team; non_unique_ordered allows duplicates
+    let result = map
+        .get_mut_by_email(&"alice@example.com".to_string())
+        .unwrap()
+        .modify_or_remove(|p| p.team = "mobile".to_string());
+    assert!(result.is_ok());
+    assert_eq!(map.len(), 3);
+    let backend: Vec<_> = map.get_by_team(&"backend".to_string());
+    assert!(backend.iter().all(|p| p.email != "alice@example.com"));
+    assert_eq!(backend.len(), 1); // only bob remains
+    let mobile: Vec<_> = map.get_by_team(&"mobile".to_string());
+    assert_eq!(mobile.len(), 1);
+    assert_eq!(mobile[0].email, "alice@example.com");
+}
+
+// --- modify_or_remove via combined get_mut ---
+
+#[test]
+fn test_modify_via_get_mut_by_department_team() {
+    let mut map = make_map();
+    // promote alice's seniority via the combined index
+    let result = map
+        .get_mut_by_department_team(&"engineering".to_string(), &"backend".to_string())
+        .unwrap()
+        .find(|e| e.email == "alice@example.com")
+        .unwrap()
+        .modify_or_remove(|p| p.seniority = 99);
+    assert!(result.is_ok());
+    assert_eq!(map.len(), 3);
+    assert_eq!(
+        map.get_by_seniority(&99).unwrap().email,
+        "alice@example.com"
+    );
+    assert!(map.get_by_seniority(&5).is_none());
+}
+
+#[test]
+fn test_modify_via_get_mut_by_department_team_clash_removes_entry() {
+    let mut map = make_map();
+    // changing alice's seniority to bob's (2) via combined index; alice is lost on clash
+    let result = map
+        .get_mut_by_department_team(&"engineering".to_string(), &"backend".to_string())
+        .unwrap()
+        .find(|e| e.email == "alice@example.com")
+        .unwrap()
+        .modify_or_remove(|p| p.seniority = 2);
+    assert!(result.is_err());
+    assert_eq!(map.len(), 2);
+    assert!(map.get_by_email(&"alice@example.com".to_string()).is_none());
+    // bob's seniority=2 still intact
+    assert_eq!(map.get_by_seniority(&2).unwrap().email, "bob@example.com");
+}
+
+#[test]
+fn test_modify_via_get_mut_by_age_department_team() {
+    let mut map = make_map();
+    // update alice's team via the three-field combined index
+    let result = map
+        .get_mut_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string())
+        .unwrap()
+        .first()
+        .unwrap()
+        .modify_or_remove(|p| p.team = "platform".to_string());
+    assert!(result.is_ok());
+    assert_eq!(map.len(), 3);
+    // alice no longer in backend bucket
+    let backend: Vec<_> = map.get_by_team(&"backend".to_string());
+    assert!(backend.iter().all(|p| p.email != "alice@example.com"));
+    // alice now in platform bucket
+    let platform: Vec<_> = map.get_by_team(&"platform".to_string());
+    assert_eq!(platform.len(), 1);
+    assert_eq!(platform[0].email, "alice@example.com");
+    // alice no longer reachable via old combined index
+    let old_combined: Vec<_> = map
+        .get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string());
+    assert!(old_combined.iter().all(|p| p.email != "alice@example.com"));
+}
+
+// --- error value contains the orphaned entry ---
+
+#[test]
+fn test_modify_clash_error_contains_attempted_value() {
+    let mut map = make_map();
+    // the Err should carry back the value that failed to re-insert
+    let result = map
+        .get_mut_by_email(&"alice@example.com".to_string())
+        .unwrap()
+        .modify_or_remove(|p| {
+            p.email = "bob@example.com".to_string();
+            p.seniority = 999;
+        });
+    let err = result.unwrap_err();
+    // the orphaned value reflects the mutation that was attempted
+    assert_eq!(err.value.email, "bob@example.com");
+    assert_eq!(err.value.seniority, 999);
 }

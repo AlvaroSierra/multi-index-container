@@ -407,6 +407,34 @@ macro_rules! multi_index_container {
             }
 
             impl<'map> [<$map_name MutEntries>]<'map> {
+                pub fn filter<F>(self, mut predicate: F) -> Self
+                where
+                    F: FnMut(&$value_type) -> bool,
+                {
+                    let filtered: Vec<_> = self
+                        .entries
+                        .filter(|index| {
+                            self.hashmap
+                                .storage
+                                .get(index)
+                                .map(|v| predicate(v))
+                                .unwrap_or(false)
+                        })
+                        .collect();
+
+                    Self {
+                        entries: filtered.into_iter(),
+                        hashmap: self.hashmap,
+                    }
+                }
+
+                pub fn first(self) -> Option<[<$map_name MutEntry>]<'map>> {
+                    let hashmap = self.hashmap;
+                    self.entries
+                        .into_iter()
+                        .next()
+                        .map(|entry| [<$map_name MutEntry>] { entry, hashmap })
+                }
 
                 pub fn for_each<F>(self, mut f: F)
                 where
@@ -417,7 +445,37 @@ macro_rules! multi_index_container {
                         f([<$map_name MutEntry>] { entry, hashmap });
                     }
                 }
+                pub fn find<F>(self, mut predicate: F) -> Option<[<$map_name MutEntry>]<'map>>
+                where
+                    F: FnMut(&$value_type) -> bool,
+                {
+                    let hashmap = self.hashmap;
+                    let found = self.entries
+                        .into_iter()
+                        .find(|index| {
+                            hashmap
+                                .storage
+                                .get(index)
+                                .map(|v| predicate(v))
+                                .unwrap_or(false)
+                        });
 
+                    found.map(|entry| [<$map_name MutEntry>] { entry, hashmap })
+                }
+
+                pub fn remove_all(self) -> Vec<$value_type> {
+                    let hashmap = self.hashmap;
+                    self.entries
+                        .into_iter()
+                        .filter_map(|entry| {
+                            hashmap
+                                .storage
+                                .get(&entry)
+                                .is_some()
+                                .then(|| [<$map_name MutEntry>] { entry, hashmap }.remove())
+                        })
+                        .collect()
+                }
             }
         }
 
