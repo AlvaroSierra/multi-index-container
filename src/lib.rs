@@ -1,3 +1,5 @@
+mod combined_getters;
+
 #[doc(hidden)]
 pub mod __private {
     pub use pastey::paste;
@@ -305,6 +307,18 @@ macro_rules! multi_index_container {
                 }
             )*
 
+            $crate::__multimap_combined_getters!(@generate_combos
+                $vis $map_name<$value_type>,
+                all_fields: [
+                    $(($non_unique_name: $non_unique_key_type))*
+                    $(($non_unique_ordered_name: $non_unique_ordered_key_type))*
+                ],
+                selected: [],
+                remaining: [
+                    $($non_unique_name: $non_unique_key_type,)*
+                    $($non_unique_ordered_name: $non_unique_ordered_key_type,)*
+                ]
+            );
 
             #[doc = concat!("Remove entry from store by unique key.")]
             pub fn remove(&mut self, storage_key: &paste! { [<$map_name StorageIndex>] }) -> Option<$value_type> {

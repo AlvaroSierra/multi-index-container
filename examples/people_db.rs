@@ -5,38 +5,49 @@ pub struct Person {
     email: String,
     age: u32,
     department: String,
+    seniority: u32,
+    team: String,
 }
 
 multi_index_container! {
-
-    /// Example documentation for the type
+    #[derive(Debug)]
     pub PersonMap<Person> {
         unique email: String => |p| p.email.clone(),
+        non_unique age: u32 => |p| p.age,
         non_unique department: String => |p| p.department.clone(),
-        non_unique_ordered age: u32 => |p| p.age,
+        unique_ordered seniority: u32 => |p| p.seniority,
+        non_unique_ordered team: String => |p| p.team.clone(),
     }
 }
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut store = PersonMap::new();
-
-    let person1 = Person {
+    let mut map = PersonMap::new();
+    map.insert(Person {
         email: "alice@example.com".to_string(),
         age: 30,
-        department: "Engineering".to_string(),
-    };
-
-    store.insert(person1)?;
-
-    let person2 = Person {
+        department: "engineering".to_string(),
+        seniority: 5,
+        team: "backend".to_string(),
+    })
+    .unwrap();
+    map.insert(Person {
         email: "bob@example.com".to_string(),
+        age: 25,
+        department: "engineering".to_string(),
+        seniority: 2,
+        team: "backend".to_string(),
+    })
+    .unwrap();
+    map.insert(Person {
+        email: "carol@example.com".to_string(),
         age: 30,
-        department: "Engineering".to_string(),
-    };
+        department: "design".to_string(),
+        seniority: 7,
+        team: "frontend".to_string(),
+    })
+    .unwrap();
 
-    store.insert(person2)?;
-
-    dbg!(store.get_by_age(&30));
+    dbg!(map.get_by_age(&30));
 
     Ok(())
 }

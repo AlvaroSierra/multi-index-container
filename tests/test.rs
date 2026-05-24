@@ -571,3 +571,126 @@ fn test_insert_or_overwrite_idempotent() {
     let frontend: Vec<_> = map.get_by_team(&"frontend".to_string());
     assert_eq!(frontend.len(), 1);
 }
+
+#[test]
+fn test_get_by_department_team_match() {
+    let map = make_map();
+    // alice and bob are both engineering/backend
+    let results: Vec<_> = map
+        .get_by_department_team(&"engineering".to_string(), &"backend".to_string());
+    assert_eq!(results.len(), 2);
+    assert!(results.iter().any(|p| p.email == "alice@example.com"));
+    assert!(results.iter().any(|p| p.email == "bob@example.com"));
+}
+
+#[test]
+fn test_get_by_department_team_no_match() {
+    let map = make_map();
+    // no one is in engineering/frontend
+    let results: Vec<_> = map
+        .get_by_department_team(&"engineering".to_string(), &"frontend".to_string());
+    assert!(results.is_empty());
+}
+
+#[test]
+fn test_get_by_department_team_single_match() {
+    let map = make_map();
+    // only carol is design/frontend
+    let results: Vec<_> = map
+        .get_by_department_team(&"design".to_string(), &"frontend".to_string());
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].email, "carol@example.com");
+}
+
+#[test]
+fn test_get_by_department_team_unknown_department() {
+    let map = make_map();
+    let results: Vec<_> = map
+        .get_by_department_team(&"hr".to_string(), &"backend".to_string());
+    assert!(results.is_empty());
+}
+
+#[test]
+fn test_get_by_department_team_unknown_team() {
+    let map = make_map();
+    let results: Vec<_> = map
+        .get_by_department_team(&"engineering".to_string(), &"mobile".to_string());
+    assert!(results.is_empty());
+}
+
+// --- get_by_age_department_team ---
+
+#[test]
+fn test_get_by_age_department_team_single_match() {
+    let map = make_map();
+    // alice: age=30, engineering, backend
+    let results: Vec<_> = map
+        .get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string());
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].email, "alice@example.com");
+}
+
+#[test]
+fn test_get_by_age_department_team_age_narrows_department_team() {
+    let map = make_map();
+    // bob is also engineering/backend but age=25, not 30; must not appear
+    let results: Vec<_> = map
+        .get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string());
+    assert!(results.iter().all(|p| p.email != "bob@example.com"));
+}
+
+#[test]
+fn test_get_by_age_department_team_no_match_wrong_age() {
+    let map = make_map();
+    // engineering/backend exists, but not at age=99
+    let results: Vec<_> = map
+        .get_by_age_department_team(&99, &"engineering".to_string(), &"backend".to_string());
+    assert!(results.is_empty());
+}
+
+#[test]
+fn test_get_by_age_department_team_no_match_wrong_department() {
+    let map = make_map();
+    // age=30 and team=backend exist, but not with department=sales
+    let results: Vec<_> = map
+        .get_by_age_department_team(&30, &"sales".to_string(), &"backend".to_string());
+    assert!(results.is_empty());
+}
+
+#[test]
+fn test_get_by_age_department_team_no_match_wrong_team() {
+    let map = make_map();
+    // age=30 and department=engineering exist, but not with team=mobile
+    let results: Vec<_> = map
+        .get_by_age_department_team(&30, &"engineering".to_string(), &"mobile".to_string());
+    assert!(results.is_empty());
+}
+
+#[test]
+fn test_get_by_age_department_team_all_unknown() {
+    let map = make_map();
+    let results: Vec<_> = map
+        .get_by_age_department_team(&0, &"unknown".to_string(), &"unknown".to_string());
+    assert!(results.is_empty());
+}
+
+// --- cross-check: get_by_department_team vs get_by_age_department_team ---
+
+#[test]
+fn test_combined_subset_of_department_team() {
+    let map = make_map();
+    // get_by_age_department_team results must always be a subset of get_by_department_team
+    let by_dept_team: Vec<_> = map
+        .get_by_department_team(&"engineering".to_string(), &"backend".to_string())
+        .into_iter()
+        .map(|p| p.email.clone())
+        .collect();
+    let by_age_dept_team: Vec<_> = map
+        .get_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string())
+        .into_iter()
+        .map(|p| p.email.clone())
+        .collect();
+    for email in &by_age_dept_team {
+        assert!(by_dept_team.contains(email));
+    }
+}
