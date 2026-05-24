@@ -21,7 +21,7 @@ macro_rules! multi_index_map {
             $(non_unique $non_unique_name:ident: $non_unique_key_type:ty => |$non_unique_param:ident| $non_unique_expr:expr,)*
         }
     ) => {
-        use std::collections::HashMap;
+        use std::collections::{HashMap, HashSet};
         use multi_index_hashmap::__private::paste;
 
         $(#[$meta])*
@@ -39,7 +39,7 @@ macro_rules! multi_index_map {
                 $unique_name: HashMap<$unique_key_type, $storage_key_type>,
             )*
             $(
-                $non_unique_name: HashMap<$non_unique_key_type, Vec<$storage_key_type>>,
+                $non_unique_name: HashMap<$non_unique_key_type, HashSet<$storage_key_type>>,
             )*
         }
 
@@ -88,8 +88,8 @@ macro_rules! multi_index_map {
                     let non_unique_key = $non_unique_expr;
                     self.$non_unique_name
                         .entry(non_unique_key)
-                        .or_insert_with(Vec::new)
-                        .push(storage_key_clone.clone());
+                        .or_default()
+                        .insert(storage_key_clone.clone());
                 )*
 
                 Ok(())
