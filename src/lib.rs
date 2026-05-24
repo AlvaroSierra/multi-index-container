@@ -12,7 +12,7 @@ pub struct UniqueContraintViolation<T> {
 
 /// Macro to define a multi-index map with unique and non-unique indexes
 #[macro_export]
-macro_rules! multi_index_map {
+macro_rules! multi_index_container {
     (
         $(#[$meta:meta])*
         $vis:vis $map_name:ident<$value_type:ty> {
@@ -22,7 +22,7 @@ macro_rules! multi_index_map {
             $(non_unique_ordered $non_unique_ordered_name:ident: $non_unique_ordered_key_type:ty => |$non_unique_ordered_param:ident| $non_unique_ordered_expr:expr,)*
         }
     ) => {
-        use multi_index_hashmap::__private::paste;
+        use multi_index_container::__private::paste;
 
         paste! {
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -94,20 +94,20 @@ macro_rules! multi_index_map {
             }
 
             #[doc = concat!("Inserts a `", stringify!($value_type), "` and update all indexes with the new type.")]
-            pub fn insert(&mut self, value: $value_type) -> Result<(), multi_index_hashmap::UniqueContraintViolation<$value_type>> {
+            pub fn insert(&mut self, value: $value_type) -> Result<(), multi_index_container::UniqueContraintViolation<$value_type>> {
                 // Check unique constraints
                 $(
                     let $unique_param = &value;
                     let unique_key = $unique_expr;
                     if self.$unique_name.contains_key(&unique_key) {
-                        return Err(multi_index_hashmap::UniqueContraintViolation { field: stringify!($unique_name), value } );
+                        return Err(multi_index_container::UniqueContraintViolation { field: stringify!($unique_name), value } );
                     }
                 )*
                 $(
                     let $unique_ordered_param = &value;
                     let unique_key = $unique_ordered_expr;
                     if self.$unique_ordered_name.contains_key(&unique_key) {
-                        return Err(multi_index_hashmap::UniqueContraintViolation { field: stringify!($unique_ordered_name), value } );
+                        return Err(multi_index_container::UniqueContraintViolation { field: stringify!($unique_ordered_name), value } );
                     }
                 )*
 
@@ -360,7 +360,7 @@ macro_rules! multi_index_map {
                  self.storage.is_empty()
             }
  
-             pub fn extend<I>(&mut self, iter: I) -> Vec<multi_index_hashmap::UniqueContraintViolation<$value_type>>
+             pub fn extend<I>(&mut self, iter: I) -> Vec<multi_index_container::UniqueContraintViolation<$value_type>>
              where
                  I: IntoIterator<Item = $value_type>,
              {
@@ -424,7 +424,7 @@ macro_rules! multi_index_map {
                 
                 #[doc = concat!("Modify a `", stringify!($value_type), "` such that indexes are kept up to date.")]
                 #[doc = "If a modified value would fail to be inserted, the original value remains in place while the new value gets returned as part of the error. This means it is cloned as part of this function. To avoid this clone you can use the modify_or_remove function"]
-                pub fn modify<F>(&mut self, f: F) -> Result<(), multi_index_hashmap::UniqueContraintViolation<$value_type>>
+                pub fn modify<F>(&mut self, f: F) -> Result<(), multi_index_container::UniqueContraintViolation<$value_type>>
                 where
                     F: for<'entry> FnOnce(&'entry mut $value_type),
                 {
@@ -443,7 +443,7 @@ macro_rules! multi_index_map {
 
                 #[doc = concat!("Modify a `", stringify!($value_type), "` such that indexes are kept up to date.")]
                 #[doc = "If a modified value would fail to be inserted, the original value is lost."]
-                pub fn modify_or_remove<F>(&mut self, f: F) -> Result<(), multi_index_hashmap::UniqueContraintViolation<$value_type>>
+                pub fn modify_or_remove<F>(&mut self, f: F) -> Result<(), multi_index_container::UniqueContraintViolation<$value_type>>
                 where
                     F: for<'entry> FnOnce(&'entry mut $value_type),
                 {

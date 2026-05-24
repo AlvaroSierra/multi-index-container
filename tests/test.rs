@@ -1,4 +1,4 @@
-use multi_index_hashmap::multi_index_map;
+use multi_index_container::multi_index_container;
 
 #[derive(Debug, Clone, PartialEq)]
 struct Person {
@@ -9,7 +9,7 @@ struct Person {
     team: String,
 }
 
-multi_index_map! {
+multi_index_container! {
     #[derive(Debug)]
     PersonMap<Person> {
         unique email: String => |p| p.email.clone(),

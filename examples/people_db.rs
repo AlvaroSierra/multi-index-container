@@ -1,4 +1,4 @@
-use multi_index_hashmap::multi_index_map;
+use multi_index_container::multi_index_container;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Person {
@@ -7,7 +7,7 @@ pub struct Person {
     department: String,
 }
 
-multi_index_map! {
+multi_index_container! {
 
     /// Example documentation for the type
     pub PersonMap<Person> {

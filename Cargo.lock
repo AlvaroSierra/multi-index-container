@@ -3,7 +3,7 @@
 version = 4
 
 [[package]]
-name = "multi-index-hashmap"
+name = "multi-index-container"
 version = "0.1.0"
 dependencies = [
  "pastey",
