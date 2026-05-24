@@ -18,6 +18,8 @@ macro_rules! multi_index_map {
         $vis:vis $map_name:ident<$value_type:ty> {
             $(unique $unique_name:ident: $unique_key_type:ty => |$unique_param:ident| $unique_expr:expr,)*
             $(non_unique $non_unique_name:ident: $non_unique_key_type:ty => |$non_unique_param:ident| $non_unique_expr:expr,)*
+            $(unique_ordered $unique_ordered_name:ident: $unique_ordered_key_type:ty => |$unique_ordered_param:ident| $unique_ordered_expr:expr,)*
+            $(non_unique_ordered $non_unique_ordered_name:ident: $non_unique_ordered_key_type:ty => |$non_unique_ordered_param:ident| $non_unique_ordered_expr:expr,)*
         }
     ) => {
         use multi_index_hashmap::__private::paste;
@@ -42,6 +44,12 @@ macro_rules! multi_index_map {
         $(
             #[doc = concat!("- Non-unique index `", stringify!($non_unique_name), "`: `", stringify!($non_unique_key_type), "`")]
         )*
+        $(
+            #[doc = concat!("- Unique ordered index `", stringify!($unique_ordered_name), "`: `", stringify!($unique_ordered_key_type), "`")]
+        )*
+        $(
+            #[doc = concat!("- Non-unique ordered index `", stringify!($non_unique_ordered_name), "`: `", stringify!($non_unique_ordered_key_type), "`")]
+        )*
         $vis struct $map_name {
             freed_storage_keys: Vec< paste! { [<$map_name StorageIndex>] }>,
             next_storage_key: paste! { [<$map_name StorageIndex>] },
@@ -51,6 +59,12 @@ macro_rules! multi_index_map {
             )*
             $(
                 $non_unique_name: std::collections::HashMap<$non_unique_key_type, std::collections::HashSet< paste! { [<$map_name StorageIndex>] } >>,
+            )*
+            $( 
+                $unique_ordered_name: std::collections::BTreeMap<$unique_ordered_key_type, paste! { [<$map_name StorageIndex>] } >, 
+            )*
+            $(
+                $non_unique_ordered_name: std::collections::BTreeMap<$non_unique_ordered_key_type, std::collections::HashSet< paste! { [<$map_name StorageIndex>] } >>,
             )*
         }
 
@@ -65,6 +79,12 @@ macro_rules! multi_index_map {
                     )*
                     $(
                         $non_unique_name: std::collections::HashMap::new(),
+                    )*
+                    $(
+                        $unique_ordered_name: std::collections::BTreeMap::new(),
+                    )*
+                    $(
+                        $non_unique_ordered_name: std::collections::BTreeMap::new(),
                     )*
                 }
             }
@@ -81,6 +101,13 @@ macro_rules! multi_index_map {
                     let unique_key = $unique_expr;
                     if self.$unique_name.contains_key(&unique_key) {
                         return Err(multi_index_hashmap::UniqueContraintViolation { field: stringify!($unique_name), value } );
+                    }
+                )*
+                $(
+                    let $unique_ordered_param = &value;
+                    let unique_key = $unique_ordered_expr;
+                    if self.$unique_ordered_name.contains_key(&unique_key) {
+                        return Err(multi_index_hashmap::UniqueContraintViolation { field: stringify!($unique_ordered_name), value } );
                     }
                 )*
 
@@ -113,6 +140,19 @@ macro_rules! multi_index_map {
                         .or_default()
                         .insert(storage_key_clone);
                 )*
+                $(
+                    let $unique_ordered_param = stored_value;
+                    let unique_ordered_key = $unique_ordered_expr;
+                    self.$unique_ordered_name.insert(unique_ordered_key, storage_key_clone);
+                )*
+                $(
+                    let $non_unique_ordered_param = stored_value;
+                    let non_unique_ordered_key = $non_unique_ordered_expr;
+                    self.$non_unique_ordered_name
+                        .entry(non_unique_ordered_key)
+                        .or_default()
+                        .insert(storage_key_clone);
+                )*
 
                 Ok(())
             }
@@ -123,6 +163,13 @@ macro_rules! multi_index_map {
                     let $unique_param = &value;
                     let unique_key = $unique_expr;
                     if let Some(&conflicting_storage_key) = self.$unique_name.get(&unique_key) {
+                        self.remove(&conflicting_storage_key);
+                    }
+                )*
+                $(
+                    let $unique_ordered_param = &value;
+                    let unique_ordered_key = $unique_ordered_expr;
+                    if let Some(&conflicting_storage_key) = self.$unique_ordered_name.get(&unique_ordered_key) {
                         self.remove(&conflicting_storage_key);
                     }
                 )*
@@ -154,6 +201,19 @@ macro_rules! multi_index_map {
                         .or_default()
                         .insert(storage_key_clone);
                 )*
+                $(
+                    let $unique_ordered_param = stored_value;
+                    let unique_ordered_key = $unique_ordered_expr;
+                    self.$unique_ordered_name.insert(unique_ordered_key, storage_key_clone);
+                )*
+                $(
+                    let $non_unique_ordered_param = stored_value;
+                    let non_unique_ordered_key = $non_unique_ordered_expr;
+                    self.$non_unique_ordered_name
+                        .entry(non_unique_ordered_key)
+                        .or_default()
+                        .insert(storage_key_clone);
+                )*
             }
 
             $(
@@ -169,6 +229,24 @@ macro_rules! multi_index_map {
                     pub fn [<get_mut_by_ $unique_name>](&mut self, key: &$unique_key_type) -> Option<[<$map_name MutEntry>]> {
                         let storage_key = self.$unique_name.get(key)?;
 
+                        Some([<$map_name MutEntry>] {
+                            entry: *storage_key,
+                            hashmap: self
+                        })
+                    }
+                }
+            )*
+
+            $(
+                paste! {
+                    #[doc = concat!("Get a single value, if it exist, by indexing by the unique ordered key `", stringify!($unique_ordered_name), "` .")]
+                    pub fn [<get_by_ $unique_ordered_name>](&self, key: &$unique_ordered_key_type) -> Option<&$value_type> {
+                        self.$unique_ordered_name
+                            .get(key)
+                            .and_then(|storage_key| self.storage.get(storage_key))
+                    }
+                    pub fn [<get_mut_by_ $unique_ordered_name>](&mut self, key: &$unique_ordered_key_type) -> Option<[<$map_name MutEntry>]> {
+                        let storage_key = self.$unique_ordered_name.get(key)?;
                         Some([<$map_name MutEntry>] {
                             entry: *storage_key,
                             hashmap: self
@@ -203,6 +281,31 @@ macro_rules! multi_index_map {
                 }
             )*
 
+            $(
+                paste! {
+                    #[doc = concat!("Get the values by indexing by the non unique ordered key `", stringify!($non_unique_ordered_name), "` .")]
+                    pub fn [<get_by_ $non_unique_ordered_name>](&self, key: &$non_unique_ordered_key_type) -> Vec<&$value_type> {
+                        self.$non_unique_ordered_name
+                            .get(key)
+                            .map(|storage_keys| {
+                                storage_keys
+                                    .iter()
+                                    .filter_map(|sk| self.storage.get(sk))
+                                    .collect()
+                            })
+                            .unwrap_or_default()
+                    }
+                    pub fn [<get_mut_by_ $non_unique_ordered_name>](&mut self, key: &$non_unique_ordered_key_type) -> Option<[<$map_name MutEntries>]> {
+                        let storage_keys = self.$non_unique_ordered_name.get(key)?;
+                        Some([<$map_name MutEntries>] {
+                            entries: storage_keys.clone().into_iter().collect::<Vec<_>>().into_iter(),
+                            hashmap: self,
+                        })
+                    }
+                }
+            )*
+
+
             #[doc = concat!("Remove entry from store by unique key.")]
             pub fn remove(&mut self, storage_key: &paste! { [<$map_name StorageIndex>] }) -> Option<$value_type> {
                 let value = self.storage.remove(storage_key)?;
@@ -222,6 +325,24 @@ macro_rules! multi_index_map {
                         keys.retain(|k| k != storage_key);
                         if keys.is_empty() {
                             self.$non_unique_name.remove(&non_unique_key);
+                        }
+                    }
+                )*
+
+                // Remove from unique ordered indexes
+                $(
+                    let $unique_ordered_param = &value;
+                    let unique_ordered_key = $unique_ordered_expr;
+                    self.$unique_ordered_name.remove(&unique_ordered_key);
+                )*
+                // Remove from non-unique ordered indexes
+                $(
+                    let $non_unique_ordered_param = &value;
+                    let non_unique_ordered_key = $non_unique_ordered_expr;
+                    if let Some(keys) = self.$non_unique_ordered_name.get_mut(&non_unique_ordered_key) {
+                        keys.remove(storage_key);
+                        if keys.is_empty() {
+                            self.$non_unique_ordered_name.remove(&non_unique_ordered_key);
                         }
                     }
                 )*

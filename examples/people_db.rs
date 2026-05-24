@@ -12,8 +12,8 @@ multi_index_map! {
     /// Example documentation for the type
     pub PersonMap<Person> {
         unique email: String => |p| p.email.clone(),
-        non_unique age: u32 => |p| p.age,
         non_unique department: String => |p| p.department.clone(),
+        non_unique_ordered age: u32 => |p| p.age,
     }
 }
 
