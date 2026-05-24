@@ -490,6 +490,38 @@ macro_rules! multi_index_container {
                         })
                         .collect()
                 }
+
+                pub fn last(self) -> Option<[<$map_name MutEntry>]<'map>> {
+                    let hashmap = self.hashmap;
+                    self.entries
+                        .into_iter()
+                        .last()
+                        .map(|entry| [<$map_name MutEntry>] { entry, hashmap })
+                }
+
+                pub fn nth(self, n: usize) -> Option<[<$map_name MutEntry>]<'map>> {
+                    let hashmap = self.hashmap;
+                    self.entries
+                        .into_iter()
+                        .nth(n)
+                        .map(|entry| [<$map_name MutEntry>] { entry, hashmap })
+                }
+
+                pub fn count(self) -> usize {
+                    self.entries.len()
+                }
+
+                pub fn is_empty(self) -> bool {
+                    self.entries.len() == 0
+                }
+
+                pub fn collect_values(self) -> Vec<&'map $value_type> {
+                    let hashmap = self.hashmap;
+                    self.entries
+                        .into_iter()
+                        .filter_map(|index| hashmap.storage.get(&index))
+                        .collect()
+                }
             }
         }
 
