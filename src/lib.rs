@@ -16,13 +16,23 @@ macro_rules! multi_index_map {
     (
         $(#[$meta:meta])*
         $vis:vis $map_name:ident<$value_type:ty> {
-            storage_key: $storage_key_type:ty => |$storage_param:ident| $storage_expr:expr,
             $(unique $unique_name:ident: $unique_key_type:ty => |$unique_param:ident| $unique_expr:expr,)*
             $(non_unique $non_unique_name:ident: $non_unique_key_type:ty => |$non_unique_param:ident| $non_unique_expr:expr,)*
         }
     ) => {
         use std::collections::{HashMap, HashSet};
         use multi_index_hashmap::__private::paste;
+
+        paste! {
+            #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
+            $vis struct [<$map_name StorageIndex>] (usize);
+
+            impl [<$map_name StorageIndex>] {
+                pub fn next(&self) -> Self {
+                    Self ( self.0 + 1 )
+                }
+            }
+        }
 
         $(#[$meta])*
         #[doc = ""]
@@ -34,18 +44,22 @@ macro_rules! multi_index_map {
             #[doc = concat!("- Non-unique index `", stringify!($non_unique_name), "`: `", stringify!($non_unique_key_type), "`")]
         )*
         $vis struct $map_name {
-            storage: HashMap<$storage_key_type, $value_type>,
+            freed_storage_keys: Vec< paste! { [<$map_name StorageIndex>] }>,
+            next_storage_key: paste! { [<$map_name StorageIndex>] },
+            storage: HashMap<paste! { [<$map_name StorageIndex>] }, $value_type>,
             $(
-                $unique_name: HashMap<$unique_key_type, $storage_key_type>,
+                $unique_name: HashMap<$unique_key_type, paste! { [<$map_name StorageIndex>] }>,
             )*
             $(
-                $non_unique_name: HashMap<$non_unique_key_type, HashSet<$storage_key_type>>,
+                $non_unique_name: HashMap<$non_unique_key_type, HashSet< paste! { [<$map_name StorageIndex>] } >>,
             )*
         }
 
         impl $map_name {
             pub fn new() -> Self {
                 Self {
+                    freed_storage_keys: Vec::new(),
+                    next_storage_key: Default::default(),
                     storage: HashMap::new(),
                     $(
                         $unique_name: HashMap::new(),
@@ -56,11 +70,12 @@ macro_rules! multi_index_map {
                 }
             }
 
+            pub fn get(&self, storage_key: &paste! { [<$map_name StorageIndex>] }) -> Option<&$value_type> {
+                self.storage.get(storage_key)
+            }
+
             #[doc = concat!("Inserts a `", stringify!($value_type), "` and update all indexes with the new type.")]
             pub fn insert(&mut self, value: $value_type) -> Result<(), multi_index_hashmap::UniqueContraintViolation<$value_type>> {
-                let $storage_param = &value;
-                let storage_key = $storage_expr;
-
                 // Check unique constraints
                 $(
                     let $unique_param = &value;
@@ -69,6 +84,14 @@ macro_rules! multi_index_map {
                         return Err(multi_index_hashmap::UniqueContraintViolation { field: stringify!($unique_name), value } );
                     }
                 )*
+
+                let storage_key = self.freed_storage_keys.pop().unwrap_or_else(
+                    || {
+                        let key = self.next_storage_key;
+                        self.next_storage_key = self.next_storage_key.next();
+                        key
+                    }
+                );
 
                 // Insert into storage
                 let storage_key_clone = storage_key.clone();
@@ -103,6 +126,16 @@ macro_rules! multi_index_map {
                             .get(key)
                             .and_then(|storage_key| self.storage.get(storage_key))
                     }
+
+
+                    pub fn [<get_mut_by_ $unique_name>](&mut self, key: &$unique_key_type) -> Option<[<$map_name MutEntry>]> {
+                        let storage_key = self.$unique_name.get(key)?;
+
+                        Some([<$map_name MutEntry>] {
+                            entry: *storage_key,
+                            hashmap: self
+                        })
+                    }
                 }
             )*
 
@@ -120,11 +153,20 @@ macro_rules! multi_index_map {
                             })
                             .unwrap_or_default()
                     }
+
+                    pub fn [<get_mut_by_ $non_unique_name>](&mut self, key: &$non_unique_key_type) -> Option<[<$map_name MutEntries>]> {
+                        let storage_keys = self.$non_unique_name.get(key)?;
+
+                        Some([<$map_name MutEntries>] {
+                            entries: storage_keys.clone().into_iter().collect::<Vec<_>>().into_iter(),
+                            hashmap: self,
+                        })
+                    }
                 }
             )*
 
             #[doc = concat!("Remove entry from store by unique key.")]
-            pub fn remove(&mut self, storage_key: &$storage_key_type) -> Option<$value_type> {
+            pub fn remove(&mut self, storage_key: &paste! { [<$map_name StorageIndex>] }) -> Option<$value_type> {
                 let value = self.storage.remove(storage_key)?;
 
                 // Remove from unique indexes
@@ -146,6 +188,8 @@ macro_rules! multi_index_map {
                     }
                 )*
 
+                self.freed_storage_keys.push(*storage_key);
+
                 Some(value)
             }
 
@@ -155,7 +199,7 @@ macro_rules! multi_index_map {
 
              pub fn is_empty(&self) -> bool {
                  self.storage.is_empty()
-              }
+            }
 
              pub fn extend<I>(&mut self, iter: I) -> Vec<multi_index_hashmap::UniqueContraintViolation<$value_type>>
              where
@@ -170,16 +214,54 @@ macro_rules! multi_index_map {
                  errors
              }
 
-             pub fn values(&self) -> std::collections::hash_map::Values<'_, u32, $value_type> {
+             pub fn values(&self) -> std::collections::hash_map::Values<'_, paste! { [<$map_name StorageIndex>] }, $value_type> {
                  self.storage.values()
              }
-          }
+        }
 
         impl Default for $map_name {
 
             #[inline]
             fn default() -> Self {
                 Self::new()
+            }
+        }
+
+        paste! {
+            $vis struct [<$map_name MutEntries>]<'map> {
+                entries: std::vec::IntoIter<[<$map_name StorageIndex>]>,
+                hashmap: &'map mut $map_name,
+            }
+
+            impl<'map> [<$map_name MutEntries>]<'map> {
+
+                pub fn for_each<F>(self, mut f: F)
+                where
+                    F: for<'entry> FnMut([<$map_name MutEntry>]<'entry>),
+                {
+                    let hashmap = self.hashmap;
+                    for entry in self.entries {
+                        f([<$map_name MutEntry>] { entry, hashmap });
+                    }
+                }
+
+            }
+        }
+
+        paste! {
+            $vis struct [<$map_name MutEntry>] <'map> {
+                entry: [<$map_name StorageIndex>],
+                hashmap: &'map mut $map_name,
+            }
+
+            impl<'map> [<$map_name MutEntry>]<'map> {
+                pub fn remove(&mut self) -> Option<$value_type> {
+                    self.hashmap.remove(&self.entry)
+                }
+
+                pub fn get(&self) -> Option<&$value_type> {
+                    self.hashmap.get(&self.entry)
+                }
             }
         }
     };

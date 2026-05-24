@@ -2,7 +2,6 @@ use multi_index_hashmap::multi_index_map;
 
 #[derive(Debug, Clone, PartialEq)]
 struct Person {
-    id: u32,
     email: String,
     age: u32,
     department: String,
@@ -10,7 +9,6 @@ struct Person {
 
 multi_index_map! {
     PersonMap<Person> {
-        storage_key: u32 => |p| p.id,
         unique email: String => |p| p.email.clone(),
         non_unique age: u32 => |p| p.age,
         non_unique department: String => |p| p.department.clone(),
@@ -22,7 +20,6 @@ fn test_insert_and_get() {
     let mut map = PersonMap::new();
 
     let person = Person {
-        id: 1,
         email: "alice@example.com".to_string(),
         age: 30,
         department: "Engineering".to_string(),
@@ -47,14 +44,12 @@ fn test_unique_constraint() {
     let mut map = PersonMap::new();
 
     let person1 = Person {
-        id: 1,
         email: "alice@example.com".to_string(),
         age: 30,
         department: "Engineering".to_string(),
     };
 
     let person2 = Person {
-        id: 2,
         email: "alice@example.com".to_string(),
         age: 25,
         department: "Sales".to_string(),
@@ -69,14 +64,12 @@ fn test_non_unique_index() {
     let mut map = PersonMap::new();
 
     let person1 = Person {
-        id: 1,
         email: "alice@example.com".to_string(),
         age: 30,
         department: "Engineering".to_string(),
     };
 
     let person2 = Person {
-        id: 2,
         email: "bob@example.com".to_string(),
         age: 30,
         department: "Engineering".to_string(),
@@ -97,7 +90,6 @@ fn test_remove() {
     let mut map = PersonMap::new();
 
     let person = Person {
-        id: 1,
         email: "alice@example.com".to_string(),
         age: 30,
         department: "Engineering".to_string(),
@@ -105,7 +97,10 @@ fn test_remove() {
 
     map.insert(person.clone()).unwrap();
 
-    let removed = map.remove(&1);
+    let removed = map
+        .get_mut_by_email(&"alice@example.com".to_string())
+        .unwrap()
+        .remove();
     assert_eq!(removed, Some(person));
 
     assert_eq!(map.len(), 0);
@@ -118,13 +113,11 @@ fn test_extend() {
 
     let people = vec![
         Person {
-            id: 1,
             email: "alice@example.com".to_string(),
             age: 30,
             department: "Engineering".to_string(),
         },
         Person {
-            id: 2,
             email: "bob@example.com".to_string(),
             age: 30,
             department: "Sales".to_string(),
@@ -142,13 +135,11 @@ fn test_extend_with_errors() {
 
     let people = vec![
         Person {
-            id: 1,
             email: "alice@example.com".to_string(),
             age: 30,
             department: "Engineering".to_string(),
         },
         Person {
-            id: 2,
             email: "alice@example.com".to_string(),
             age: 25,
             department: "Sales".to_string(),
