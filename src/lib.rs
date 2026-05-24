@@ -254,12 +254,43 @@ macro_rules! multi_index_map {
             }
 
             impl<'map> [<$map_name MutEntry>]<'map> {
-                pub fn remove(&mut self) -> Option<$value_type> {
-                    self.hashmap.remove(&self.entry)
+                pub fn remove(&mut self) -> $value_type {
+                    self.hashmap.remove(&self.entry).expect("Expected the value to exist given it is guaranteed by the mutable pointer to the hashmap while this reference is initialised.")
                 }
 
-                pub fn get(&self) -> Option<&$value_type> {
-                    self.hashmap.get(&self.entry)
+                pub fn get(&self) -> &$value_type {
+                    self.hashmap.get(&self.entry).expect("Expected the value to exist given it is guaranteed by the mutable pointer to the hashmap while this reference is initialised.")
+                }
+                
+                #[doc = concat!("Modify a `", stringify!($value_type), "` such that indexes are kept up to date.")]
+                #[doc = "If a modified value would fail to be inserted, the original value remains in place while the new value gets returned as part of the error. This means it is cloned as part of this function. To avoid this clone you can use the modify_or_remove function"]
+                pub fn modify<F>(&mut self, f: F) -> Result<(), multi_index_hashmap::UniqueContraintViolation<$value_type>>
+                where
+                    F: for<'entry> FnOnce(&'entry mut $value_type),
+                {
+                    let value = self.remove();
+                    let mut modifiable_value = value.clone();
+                    f(&mut modifiable_value);
+
+                    if let Err(error) = self.hashmap.insert(modifiable_value) {
+                        self.hashmap.insert(value).expect("Expected to be able to insert the value we just removed.");
+
+                        return Err(error)
+                    }
+
+                    Ok(())
+                }
+
+                #[doc = concat!("Modify a `", stringify!($value_type), "` such that indexes are kept up to date.")]
+                #[doc = "If a modified value would fail to be inserted, the original value is lost."]
+                pub fn modify_or_remove<F>(&mut self, f: F) -> Result<(), multi_index_hashmap::UniqueContraintViolation<$value_type>>
+                where
+                    F: for<'entry> FnOnce(&'entry mut $value_type),
+                {
+                    let mut modifiable_value = self.remove();
+                    f(&mut modifiable_value);
+
+                    self.hashmap.insert(modifiable_value)
                 }
             }
         }
