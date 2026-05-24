@@ -701,7 +701,6 @@ fn test_remove_via_get_mut_by_department_team_single_match() {
     // design/frontend only has carol; remove her
     let removed = map
         .get_mut_by_department_team(&"design".to_string(), &"frontend".to_string())
-        .unwrap()
         .first()
         .unwrap()
         .remove();
@@ -724,7 +723,6 @@ fn test_remove_via_get_mut_by_department_team_one_of_many() {
     // engineering/backend has alice and bob; remove only the first result
     let removed = map
         .get_mut_by_department_team(&"engineering".to_string(), &"backend".to_string())
-        .unwrap()
         .first()
         .unwrap()
         .remove();
@@ -742,7 +740,6 @@ fn test_remove_all_via_get_mut_by_department_team() {
     // drain all engineering/backend entries
     let emails: Vec<String> = map
         .get_mut_by_department_team(&"engineering".to_string(), &"backend".to_string())
-        .unwrap()
         .remove_all()
         .into_iter()
         .map(|x| x.email)
@@ -768,7 +765,6 @@ fn test_remove_via_get_mut_by_age_department_team_single_match() {
     // age=30, engineering, backend matches only alice (bob is age=25)
     let removed = map
         .get_mut_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string())
-        .unwrap()
         .first()
         .unwrap()
         .remove();
@@ -790,7 +786,7 @@ fn test_remove_via_get_mut_by_age_department_team_no_match() {
     let mut map = make_map();
     // age=99 matches nobody; iterator is empty, map unchanged
     let iter =
-        map.get_mut_by_age_department_team(&99, &"engineering".to_string(), &"backend".to_string());
+        map.get_mut_by_age_department_team(&99, &"engineering".to_string(), &"backend".to_string()).first();
     assert!(iter.is_none());
     assert_eq!(map.len(), 3);
 }
@@ -801,7 +797,6 @@ fn test_remove_via_get_mut_by_age_department_team_clears_all_indexes() {
     // remove bob via age=25, engineering, backend
     let removed = map
         .get_mut_by_age_department_team(&25, &"engineering".to_string(), &"backend".to_string())
-        .unwrap()
         .first()
         .unwrap()
         .remove();
@@ -956,7 +951,6 @@ fn test_modify_via_get_mut_by_department_team() {
     // promote alice's seniority via the combined index
     let result = map
         .get_mut_by_department_team(&"engineering".to_string(), &"backend".to_string())
-        .unwrap()
         .find(|e| e.email == "alice@example.com")
         .unwrap()
         .modify_or_remove(|p| p.seniority = 99);
@@ -975,7 +969,6 @@ fn test_modify_via_get_mut_by_department_team_clash_removes_entry() {
     // changing alice's seniority to bob's (2) via combined index; alice is lost on clash
     let result = map
         .get_mut_by_department_team(&"engineering".to_string(), &"backend".to_string())
-        .unwrap()
         .find(|e| e.email == "alice@example.com")
         .unwrap()
         .modify_or_remove(|p| p.seniority = 2);
@@ -992,7 +985,6 @@ fn test_modify_via_get_mut_by_age_department_team() {
     // update alice's team via the three-field combined index
     let result = map
         .get_mut_by_age_department_team(&30, &"engineering".to_string(), &"backend".to_string())
-        .unwrap()
         .first()
         .unwrap()
         .modify_or_remove(|p| p.team = "platform".to_string());

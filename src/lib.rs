@@ -272,13 +272,19 @@ macro_rules! multi_index_container {
                             .unwrap_or_default()
                     }
 
-                    pub fn [<get_mut_by_ $non_unique_name>](&mut self, key: &$non_unique_key_type) -> Option<[<$map_name MutEntries>]> {
-                        let storage_keys = self.$non_unique_name.get(key)?;
+                    pub fn [<get_mut_by_ $non_unique_name>](&mut self, key: &$non_unique_key_type) -> [<$map_name MutEntries>] {
+                        let storage_keys = match self.$non_unique_name.get(key) {
+                            Some(s) => s,
+                            None => return [<$map_name MutEntries>] {
+                                entries: vec![].into_iter(),
+                                hashmap: self,
+                            },
+                        };
 
-                        Some([<$map_name MutEntries>] {
+                        [<$map_name MutEntries>] {
                             entries: storage_keys.clone().into_iter().collect::<Vec<_>>().into_iter(),
                             hashmap: self,
-                        })
+                        }
                     }
                 }
             )*
@@ -297,12 +303,19 @@ macro_rules! multi_index_container {
                             })
                             .unwrap_or_default()
                     }
-                    pub fn [<get_mut_by_ $non_unique_ordered_name>](&mut self, key: &$non_unique_ordered_key_type) -> Option<[<$map_name MutEntries>]> {
-                        let storage_keys = self.$non_unique_ordered_name.get(key)?;
-                        Some([<$map_name MutEntries>] {
+                    pub fn [<get_mut_by_ $non_unique_ordered_name>](&mut self, key: &$non_unique_ordered_key_type) -> [<$map_name MutEntries>] {
+                        let storage_keys = match self.$non_unique_ordered_name.get(key) {
+                            Some(s) => s,
+                            None => return [<$map_name MutEntries>] {
+                                entries: vec![].into_iter(),
+                                hashmap: self,
+                            },
+                        };
+
+                        [<$map_name MutEntries>] {
                             entries: storage_keys.clone().into_iter().collect::<Vec<_>>().into_iter(),
                             hashmap: self,
-                        })
+                        }
                     }
                 }
             )*
@@ -445,6 +458,7 @@ macro_rules! multi_index_container {
                         f([<$map_name MutEntry>] { entry, hashmap });
                     }
                 }
+
                 pub fn find<F>(self, mut predicate: F) -> Option<[<$map_name MutEntry>]<'map>>
                 where
                     F: FnMut(&$value_type) -> bool,

@@ -71,21 +71,39 @@ macro_rules! __multimap_combined_getters {
                     $first_name: &$first_key,
                     $second_name: &$second_key,
                     $($more_name: &$more_key,)*
-                ) -> Option<[<$map_name MutEntries>]<'_>> {
-                    let first_set = self.$first_name.get($first_name)?;
-                    let second_set = self.$second_name.get($second_name)?;
+                ) -> [<$map_name MutEntries>]<'_> {
+                    let first_set = match self.$first_name.get($first_name) {
+                        Some(s) => s,
+                        None => return [<$map_name MutEntries>] {
+                            entries: vec![].into_iter(),
+                            hashmap: self,
+                        },
+                    };
+                    let second_set = match self.$second_name.get($second_name) {
+                        Some(s) => s,
+                        None => return [<$map_name MutEntries>] {
+                            entries: vec![].into_iter(),
+                            hashmap: self,
+                        },
+                    };
                     // We must clone into an owned set because we need &mut self below
                     let mut intersection: std::collections::HashSet<_> =
                         first_set.intersection(second_set).copied().collect();
                     $(
-                        let next_set = self.$more_name.get($more_name)?;
+                        let next_set = match self.$more_name.get($more_name) {
+                            Some(s) => s,
+                            None => return [<$map_name MutEntries>] {
+                                entries: vec![].into_iter(),
+                                hashmap: self,
+                            },
+                        };
                         intersection = intersection.intersection(next_set).copied().collect();
                     )*
                     let keys: Vec<_> = intersection.into_iter().collect();
-                    Some([<$map_name MutEntries>] {
+                    [<$map_name MutEntries>] {
                         entries: keys.into_iter(),
                         hashmap: self,
-                    })
+                    }
             }
         }
     };
