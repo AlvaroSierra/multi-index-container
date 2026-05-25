@@ -1017,3 +1017,365 @@ fn test_modify_clash_error_contains_attempted_value() {
     assert_eq!(err.value.email, "bob@example.com");
     assert_eq!(err.value.seniority, 999);
 }
+
+// --- first_by_* and last_by_* on single ordered indexes ---
+
+#[test]
+fn test_first_by_seniority() {
+    let map = make_map();
+    // seniority values: bob=2, alice=5, carol=7; first should be bob
+    let first = map.first_by_seniority().unwrap();
+    assert_eq!(first.email, "bob@example.com");
+}
+
+#[test]
+fn test_last_by_seniority() {
+    let map = make_map();
+    // seniority values: bob=2, alice=5, carol=7; last should be carol
+    let last = map.last_by_seniority().unwrap();
+    assert_eq!(last.email, "carol@example.com");
+}
+
+#[test]
+fn test_first_by_seniority_empty() {
+    let map = PersonMap::new();
+    assert!(map.first_by_seniority().is_none());
+}
+
+#[test]
+fn test_last_by_seniority_empty() {
+    let map = PersonMap::new();
+    assert!(map.last_by_seniority().is_none());
+}
+
+#[test]
+fn test_first_by_team() {
+    let map = make_map();
+    // team values ordered: backend (alice, bob), frontend (carol)
+    // first alphabetically is backend
+    let first: Vec<_> = map.first_by_team().collect();
+    assert_eq!(first.len(), 2);
+    assert!(first.iter().any(|p| p.email == "alice@example.com"));
+    assert!(first.iter().any(|p| p.email == "bob@example.com"));
+}
+
+#[test]
+fn test_last_by_team() {
+    let map = make_map();
+    // last alphabetically is frontend, only carol
+    let last: Vec<_> = map.last_by_team().collect();
+    assert_eq!(last.len(), 1);
+    assert_eq!(last[0].email, "carol@example.com");
+}
+
+#[test]
+fn test_first_by_team_empty() {
+    let map = PersonMap::new();
+    let first: Vec<_> = map.first_by_team().collect();
+    assert!(first.is_empty());
+}
+
+// --- get_by_*_range on single ordered indexes ---
+
+#[test]
+fn test_get_by_seniority_range_inclusive() {
+    let map = make_map();
+    // seniority 2..=5: bob (2) and alice (5)
+    let results: Vec<_> = map.get_by_seniority_range(2..=5).collect();
+    assert_eq!(results.len(), 2);
+    assert!(results.iter().any(|p| p.email == "alice@example.com"));
+    assert!(results.iter().any(|p| p.email == "bob@example.com"));
+}
+
+#[test]
+fn test_get_by_seniority_range_exclusive() {
+    let map = make_map();
+    // seniority 2..5 excludes alice (5), returns only bob
+    let results: Vec<_> = map.get_by_seniority_range(2..5).collect();
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].email, "bob@example.com");
+}
+
+#[test]
+fn test_get_by_seniority_range_from() {
+    let map = make_map();
+    // seniority 5.. returns alice and carol
+    let results: Vec<_> = map.get_by_seniority_range(5..).collect();
+    assert_eq!(results.len(), 2);
+    assert!(results.iter().any(|p| p.email == "alice@example.com"));
+    assert!(results.iter().any(|p| p.email == "carol@example.com"));
+}
+
+#[test]
+fn test_get_by_seniority_range_to() {
+    let map = make_map();
+    // seniority ..5 excludes alice, returns only bob
+    let results: Vec<_> = map.get_by_seniority_range(..5).collect();
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].email, "bob@example.com");
+}
+
+#[test]
+fn test_get_by_seniority_range_no_match() {
+    let map = make_map();
+    let results: Vec<_> = map.get_by_seniority_range(10..=20).collect();
+    assert!(results.is_empty());
+}
+
+#[test]
+fn test_get_by_team_range_full() {
+    let map = make_map();
+    // "backend"..="frontend" covers both teams, all 3 people
+    let results: Vec<_> = map
+        .get_by_team_range("backend".to_string()..="frontend".to_string())
+        .collect();
+    assert_eq!(results.len(), 3);
+}
+
+#[test]
+fn test_get_by_team_range_partial() {
+    let map = make_map();
+    // "backend"..="backend" covers only backend entries
+    let results: Vec<_> = map
+        .get_by_team_range("backend".to_string()..="backend".to_string())
+        .collect();
+    assert_eq!(results.len(), 2);
+    assert!(results.iter().any(|p| p.email == "alice@example.com"));
+    assert!(results.iter().any(|p| p.email == "bob@example.com"));
+}
+
+#[test]
+fn test_get_by_team_range_no_match() {
+    let map = make_map();
+    let results: Vec<_> = map
+        .get_by_team_range("zzz".to_string()..)
+        .collect();
+    assert!(results.is_empty());
+}
+
+// --- combined first_by_team_* and last_by_team_* with equality filters ---
+// team is the only non_unique_ordered index so it is the range field
+
+#[test]
+fn test_first_by_team_department() {
+    let map = make_map();
+    // department=engineering: alice (backend) and bob (backend)
+    // first team alphabetically containing an engineer is backend
+    let first = map.first_by_team_department(&"engineering".to_string());
+    assert!(first.is_some());
+    assert_eq!(first.unwrap().department, "engineering");
+}
+
+#[test]
+fn test_last_by_team_department() {
+    let map = make_map();
+    // department=design: only carol (frontend)
+    // last team alphabetically containing a designer is frontend
+    let last = map.last_by_team_department(&"design".to_string());
+    assert_eq!(last.unwrap().email, "carol@example.com");
+}
+
+#[test]
+fn test_first_by_team_age() {
+    let map = make_map();
+    // age=30: alice (backend) and carol (frontend)
+    // first team alphabetically is backend, so alice
+    let first = map.first_by_team_age(&30);
+    assert_eq!(first.unwrap().email, "alice@example.com");
+}
+
+#[test]
+fn test_last_by_team_age() {
+    let map = make_map();
+    // age=30: alice (backend) and carol (frontend)
+    // last team alphabetically is frontend, so carol
+    let last = map.last_by_team_age(&30);
+    assert_eq!(last.unwrap().email, "carol@example.com");
+}
+
+#[test]
+fn test_first_by_team_department_age() {
+    let map = make_map();
+    // engineering + age=30: only alice (backend)
+    let first = map.first_by_team_age_department(&30, &"engineering".to_string());
+    assert_eq!(first.unwrap().email, "alice@example.com");
+}
+
+#[test]
+fn test_first_by_team_department_no_match() {
+    let map = make_map();
+    assert!(map.first_by_team_department(&"hr".to_string()).is_none());
+}
+
+#[test]
+fn test_last_by_team_department_no_match() {
+    let map = make_map();
+    assert!(map.last_by_team_department(&"hr".to_string()).is_none());
+}
+
+#[test]
+fn test_first_by_team_age_no_match() {
+    let map = make_map();
+    assert!(map.first_by_team_age(&99).is_none());
+}
+
+// --- combined get_by_team_range_* with equality filters ---
+
+#[test]
+fn test_get_by_team_range_department() {
+    let map = make_map();
+    // teams "backend"..="frontend", department=engineering: alice and bob
+    let results: Vec<_> = map
+        .get_by_team_range_department(
+            "backend".to_string()..="frontend".to_string(),
+            &"engineering".to_string(),
+        )
+        .collect();
+    assert_eq!(results.len(), 2);
+    assert!(results.iter().any(|p| p.email == "alice@example.com"));
+    assert!(results.iter().any(|p| p.email == "bob@example.com"));
+}
+
+#[test]
+fn test_get_by_team_range_department_narrows_result() {
+    let map = make_map();
+    // full range returns all 3; with department=engineering only alice and bob
+    let all: Vec<_> = map
+        .get_by_team_range("backend".to_string()..="frontend".to_string())
+        .collect();
+    assert_eq!(all.len(), 3);
+    let filtered: Vec<_> = map
+        .get_by_team_range_department(
+            "backend".to_string()..="frontend".to_string(),
+            &"engineering".to_string(),
+        )
+        .collect();
+    assert_eq!(filtered.len(), 2);
+    assert!(filtered.iter().all(|p| p.department == "engineering"));
+}
+
+#[test]
+fn test_get_by_team_range_age() {
+    let map = make_map();
+    // teams "backend"..="frontend", age=30: alice and carol
+    let results: Vec<_> = map
+        .get_by_team_range_age(
+            "backend".to_string()..="frontend".to_string(),
+            &30,
+        )
+        .collect();
+    assert_eq!(results.len(), 2);
+    assert!(results.iter().any(|p| p.email == "alice@example.com"));
+    assert!(results.iter().any(|p| p.email == "carol@example.com"));
+}
+
+#[test]
+fn test_get_by_team_range_department_age() {
+    let map = make_map();
+    // teams "backend".., department=engineering, age=30: only alice
+    let results: Vec<_> = map
+        .get_by_team_range_age_department(
+            "backend".to_string()..,
+            &30,
+            &"engineering".to_string(),
+        )
+        .collect();
+    assert_eq!(results.len(), 1);
+    assert_eq!(results[0].email, "alice@example.com");
+}
+
+#[test]
+fn test_get_by_team_range_department_no_match_range() {
+    let map = make_map();
+    // range "zzz".. matches no teams
+    let results: Vec<_> = map
+        .get_by_team_range_department(
+            "zzz".to_string()..,
+            &"engineering".to_string(),
+        )
+        .collect();
+    assert!(results.is_empty());
+}
+
+#[test]
+fn test_get_by_team_range_department_no_match_filter() {
+    let map = make_map();
+    // range covers all teams but hr has no entries
+    let results: Vec<_> = map
+        .get_by_team_range_department(
+            "backend".to_string()..="frontend".to_string(),
+            &"hr".to_string(),
+        )
+        .collect();
+    assert!(results.is_empty());
+}
+
+// --- combined get_mut_by_team_range_* with equality filters ---
+
+#[test]
+fn test_get_mut_by_team_range_department_modify() {
+    let mut map = make_map();
+    // move all engineers in any team to department=platform
+    map.get_mut_by_team_range_department(
+        "backend".to_string()..="frontend".to_string(),
+        &"engineering".to_string(),
+    )
+    .for_each(|mut e| {
+        e.modify_or_remove(|p| p.department = "platform".to_string()).unwrap();
+    });
+    let platform: Vec<_> = map.get_by_department(&"platform".to_string()).collect();
+    assert_eq!(platform.len(), 2);
+    let eng: Vec<_> = map.get_by_department(&"engineering".to_string()).collect();
+    assert!(eng.is_empty());
+    // carol (design) untouched
+    assert_eq!(map.get_by_email(&"carol@example.com".to_string()).unwrap().department, "design");
+}
+
+#[test]
+fn test_get_mut_by_team_range_department_remove_all() {
+    let mut map = make_map();
+    let removed = map
+        .get_mut_by_team_range_department(
+            "backend".to_string()..="backend".to_string(),
+            &"engineering".to_string(),
+        )
+        .remove_all();
+    assert_eq!(removed.len(), 2);
+    assert!(removed.iter().any(|p| p.email == "alice@example.com"));
+    assert!(removed.iter().any(|p| p.email == "bob@example.com"));
+    assert_eq!(map.len(), 1);
+    assert!(map.get_by_email(&"carol@example.com".to_string()).is_some());
+}
+
+#[test]
+fn test_get_mut_by_team_range_department_no_match() {
+    let mut map = make_map();
+    let removed = map
+        .get_mut_by_team_range_department(
+            "zzz".to_string()..,
+            &"engineering".to_string(),
+        )
+        .remove_all();
+    assert!(removed.is_empty());
+    assert_eq!(map.len(), 3);
+}
+
+#[test]
+fn test_get_mut_by_team_range_age_filter_then_remove() {
+    let mut map = make_map();
+    // teams "backend"..="frontend", age=30, then filter seniority > 5
+    let removed = map
+        .get_mut_by_team_range_age(
+            "backend".to_string()..="frontend".to_string(),
+            &30,
+        )
+        .filter(|p| p.seniority > 5)
+        .remove_all();
+    // carol: age=30, seniority=7, frontend — matches
+    assert_eq!(removed.len(), 1);
+    assert_eq!(removed[0].email, "carol@example.com");
+    assert_eq!(map.len(), 2);
+    // alice (age=30, seniority=5) not removed
+    assert!(map.get_by_email(&"alice@example.com".to_string()).is_some());
+}
+

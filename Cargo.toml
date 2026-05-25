@@ -13,3 +13,4 @@ categories = ["data-structures"]
 [dependencies]
 pastey = "0.2.2"
 thiserror = "2.0.18"
+itertools = "0.14.0"

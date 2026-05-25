@@ -114,21 +114,6 @@ let removed: Vec<Person> = map
     .remove_all();
 ```
 
-### MutEntries API
-
-| Method | Description |
-|---|---|
-| `filter(fn)` | Narrow entries by predicate (read-only pass) |
-| `find(fn)` | Return first entry matching predicate as `Option<MutEntry>` |
-| `first()` | Return the first entry as `Option<MutEntry>` |
-| `last()` | Return the last entry as `Option<MutEntry>` |
-| `nth(n)` | Return the nth entry as `Option<MutEntry>` |
-| `count()` | Number of matched entries |
-| `is_empty()` | Whether any entries matched |
-| `collect_values()` | Read-only `Vec<&T>` of all matched entries |
-| `remove_all()` | Remove and return all matched entries as `Vec<T>` |
-| `for_each(fn)` | Apply a closure to each entry in turn |
-
 ### modify_or_remove
 
 `modify_or_remove` removes the entry, applies your closure, then re-inserts. If re-insertion fails due to a unique constraint clash, the entry is permanently removed and the failed value is returned in the `Err`:

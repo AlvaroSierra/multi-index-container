@@ -287,6 +287,27 @@ macro_rules! multi_index_container {
                             hashmap: self
                         })
                     }
+
+                    $vis fn [<first_by_ $unique_ordered_name>](&self) -> Option<&$value_type> {
+                        self.$unique_ordered_name
+                            .first_key_value()
+                            .and_then(|(_, sk)| self.storage.get(sk))
+                    }
+
+                    $vis fn [<last_by_ $unique_ordered_name>](&self) -> Option<&$value_type> {
+                        self.$unique_ordered_name
+                            .last_key_value()
+                            .and_then(|(_, sk)| self.storage.get(sk))
+                    }
+
+                    $vis fn [<get_by_ $unique_ordered_name _range>]<R>(&self, range: R) -> impl Iterator<Item = &$value_type>
+                    where
+                        R: std::ops::RangeBounds<$unique_ordered_key_type>,
+                    {
+                        self.$unique_ordered_name
+                            .range(range)
+                            .filter_map(|(_, sk)| self.storage.get(sk))
+                    }
                 }
             )*
 
@@ -351,6 +372,41 @@ macro_rules! multi_index_container {
                             hashmap: self,
                         }
                     }
+
+                    $vis fn [<first_by_ $non_unique_ordered_name>](&self) -> impl Iterator<Item = &$value_type> {
+                        self.$non_unique_ordered_name
+                            .first_key_value()
+                            .into_iter()
+                            .flat_map(|(_, storage_keys)| {
+                                storage_keys
+                                    .iter()
+                                    .filter_map(|sk| self.storage.get(sk))
+                            })
+                    }
+
+                    $vis fn [<last_by_ $non_unique_ordered_name>](&self) -> impl Iterator<Item = &$value_type> {
+                        self.$non_unique_ordered_name
+                            .last_key_value()
+                            .into_iter()
+                            .flat_map(|(_, storage_keys)| {
+                                storage_keys
+                                    .iter()
+                                    .filter_map(|sk| self.storage.get(sk))
+                            })
+                    }
+
+                    $vis fn [<get_by_ $non_unique_ordered_name _range>]<R>(&self, range: R) -> impl Iterator<Item = &$value_type>
+                    where
+                        R: std::ops::RangeBounds<$non_unique_ordered_key_type>,
+                    {
+                        self.$non_unique_ordered_name
+                            .range(range)
+                            .flat_map(|(_, storage_keys)| {
+                                storage_keys
+                                    .iter()
+                                    .filter_map(|sk| self.storage.get(sk))
+                            })
+                    }
                 }
             )*
 
@@ -363,6 +419,17 @@ macro_rules! multi_index_container {
                 selected: [],
                 remaining: [
                     $($non_unique_name: $non_unique_key_type,)*
+                    $($non_unique_ordered_name: $non_unique_ordered_key_type,)*
+                ]
+            );
+
+            $crate::__multimap_combined_ordered_getters!(@generate_combos
+                $vis $map_name<$value_type>,
+                eq_fields: [
+                    $($non_unique_name: $non_unique_key_type,)*
+                    $($non_unique_ordered_name: $non_unique_ordered_key_type,)*
+                ],
+                ordered_fields: [
                     $($non_unique_ordered_name: $non_unique_ordered_key_type,)*
                 ]
             );
