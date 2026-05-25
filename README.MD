@@ -89,9 +89,11 @@ let results: Vec<_> = map
     .collect();
 ```
 
+Many index lookups are generated, with the documentation generated running `cargo doc --open --no-deps` on your crate.
+
 ## Mutating and Removing
 
-`get_mut_by_*` returns a `MutEntries` handle that supports chained operations before committing:
+`get_mut_by_*` returns a `MutEntries` handle that supports chained operations before modifications:
 
 ```rust
 // Filter, then modify the first match
@@ -99,7 +101,7 @@ map.get_mut_by_department_team(&"engineering".to_string(), &"backend".to_string(
     .filter(|p| p.age > 25)
     .first()
     .unwrap()
-    .modify_or_remove(|p| p.seniority += 1)
+    .modify(|p| p.seniority += 1)
     .unwrap();
 
 // Remove a specific entry
