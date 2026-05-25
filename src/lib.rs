@@ -27,10 +27,27 @@ macro_rules! multi_index_container {
         use multi_index_container::__private::paste;
 
         paste! {
+            /// A typed index into the underlying storage of [`$map_name`].
+            ///
+            /// Wraps a `usize` to provide type safety, preventing accidental mix-ups
+            /// between indices belonging to different maps.
+            ///
+            /// Derived traits:
+            /// - [`Clone`], [`Copy`] — cheap to duplicate; pass by value freely.
+            /// - [`PartialEq`], [`Eq`], [`Hash`] — usable as a map key or in sets.
+            /// - [`Default`] — initialises to index `0`.
             #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
             $vis struct [<$map_name StorageIndex>] (usize);
 
             impl [<$map_name StorageIndex>] {
+                /// Returns the immediately following index.
+                ///
+                /// Useful when advancing through storage slots sequentially,
+                /// for example when inserting a new entry at the next available position.
+                ///
+                /// # Panics
+                /// Panics in debug mode if the inner `usize` overflows. In release mode
+                /// the value wraps silently.
                 pub fn next(&self) -> Self {
                     Self ( self.0 + 1 )
                 }
@@ -38,7 +55,6 @@ macro_rules! multi_index_container {
         }
 
         $(#[$meta])*
-        #[doc = ""]
         #[doc = concat!("A map for storing `", stringify!($value_type), "` indexed by `", stringify!($storage_key_type), "`.")]
         $(
             #[doc = concat!("- Unique index `", stringify!($unique_name), "`: `", stringify!($unique_key_type), "`")]
@@ -53,24 +69,38 @@ macro_rules! multi_index_container {
             #[doc = concat!("- Non-unique ordered index `", stringify!($non_unique_ordered_name), "`: `", stringify!($non_unique_ordered_key_type), "`")]
         )*
         $vis struct $map_name {
+
+
+            #[doc = "Storage keys that have been freed and can be reused."]
             freed_storage_keys: Vec< paste! { [<$map_name StorageIndex>] }>,
+
+            #[doc = "The next storage key to be assigned when no freed keys are available."]
             next_storage_key: paste! { [<$map_name StorageIndex>] },
+            
+            #[doc = concat!("Primary storage mapping each index to its `", stringify!($value_type), "`.")]
             storage: std::collections::HashMap<paste! { [<$map_name StorageIndex>] }, $value_type>,
+            
             $(
+                #[doc = concat!("Unique index `", stringify!($unique_name), "` mapping `", stringify!($unique_key_type), "` to a single storage index.")]
                 $unique_name: std::collections::HashMap<$unique_key_type, paste! { [<$map_name StorageIndex>] }>,
             )*
             $(
+                #[doc = concat!("Non-unique index `", stringify!($non_unique_name), "` mapping `", stringify!($non_unique_key_type), "` to a set of storage indices.")]
                 $non_unique_name: std::collections::HashMap<$non_unique_key_type, std::collections::HashSet< paste! { [<$map_name StorageIndex>] } >>,
             )*
             $(
+                #[doc = concat!("Unique ordered index `", stringify!($unique_ordered_name), "` mapping `", stringify!($unique_ordered_key_type), "` to a single storage index.")]
                 $unique_ordered_name: std::collections::BTreeMap<$unique_ordered_key_type, paste! { [<$map_name StorageIndex>] } >,
             )*
             $(
+                #[doc = concat!("Non-unique ordered index `", stringify!($non_unique_ordered_name), "` mapping `", stringify!($non_unique_ordered_key_type), "` to a set of storage indices.")]
                 $non_unique_ordered_name: std::collections::BTreeMap<$non_unique_ordered_key_type, std::collections::HashSet< paste! { [<$map_name StorageIndex>] } >>,
             )*
         }
 
         impl $map_name {
+            
+            #[doc = concat!("Initialise an empty ", stringify!($value_type))]
             pub fn new() -> Self {
                 Self {
                     freed_storage_keys: Vec::new(),
@@ -91,6 +121,7 @@ macro_rules! multi_index_container {
                 }
             }
 
+            #[doc = "Get a reference to a value in the store based on the storage index."]
             pub fn get(&self, storage_key: &paste! { [<$map_name StorageIndex>] }) -> Option<&$value_type> {
                 self.storage.get(storage_key)
             }
@@ -227,7 +258,7 @@ macro_rules! multi_index_container {
                             .and_then(|storage_key| self.storage.get(storage_key))
                     }
 
-
+                    #[doc = concat!("Get a mutable modifier for a value, if it exist, by indexing by the unique key `", stringify!($unique_name), "` .")]
                     pub fn [<get_mut_by_ $unique_name>](&mut self, $unique_name: &$unique_key_type) -> Option<[<$map_name MutEntry>]> {
                         let storage_key = self.$unique_name.get($unique_name)?;
 
@@ -247,6 +278,8 @@ macro_rules! multi_index_container {
                             .get($unique_ordered_name)
                             .and_then(|storage_key| self.storage.get(storage_key))
                     }
+
+                    #[doc = concat!("Get a mutable modifier for a value, if it exist, by indexing by the unique ordered key `", stringify!($unique_name), "` .")]
                     pub fn [<get_mut_by_ $unique_ordered_name>](&mut self, $unique_ordered_name: &$unique_ordered_key_type) -> Option<[<$map_name MutEntry>]> {
                         let storage_key = self.$unique_ordered_name.get($unique_ordered_name)?;
                         Some([<$map_name MutEntry>] {
@@ -271,6 +304,7 @@ macro_rules! multi_index_container {
                             })
                     }
 
+                    #[doc = concat!("Get a mutable modifier for a value, if it exist, by indexing by the non unique key `", stringify!($non_unique_name), "` .")]
                     pub fn [<get_mut_by_ $non_unique_name>](&mut self, $non_unique_name: &$non_unique_key_type) -> [<$map_name MutEntries>] {
                         let storage_keys = match self.$non_unique_name.get($non_unique_name) {
                             Some(s) => s,
@@ -301,6 +335,8 @@ macro_rules! multi_index_container {
                                     .filter_map(|sk| self.storage.get(sk))
                             })
                     }
+
+                    #[doc = concat!("Get a mutable modifier for a value, if it exist, by indexing by the non unique ordered key `", stringify!($non_unique_ordered_name), "` .")]
                     pub fn [<get_mut_by_ $non_unique_ordered_name>](&mut self, $non_unique_ordered_name: &$non_unique_ordered_key_type) -> [<$map_name MutEntries>] {
                         let storage_keys = match self.$non_unique_ordered_name.get($non_unique_ordered_name) {
                             Some(s) => s,
@@ -376,15 +412,20 @@ macro_rules! multi_index_container {
 
                 Some(value)
             }
-
+            
+            #[doc = "Get the number of values in the store"]
+            #[inline]
             pub fn len(&self) -> usize {
                 self.storage.len()
             }
-
+            
+            #[doc = "Check if the map is empty"]
+            #[inline]
              pub fn is_empty(&self) -> bool {
                  self.storage.is_empty()
             }
-
+            
+             #[doc = "Extend the map with multiple values, returning a vector of all the unique contraint errors."]
              pub fn extend<I>(&mut self, iter: I) -> Vec<multi_index_container::UniqueContraintViolation<$value_type>>
              where
                  I: IntoIterator<Item = $value_type>,
@@ -397,7 +438,8 @@ macro_rules! multi_index_container {
                  }
                  errors
              }
-
+            
+             #[doc = "Iterate over all the values in the map."]
              pub fn values(&self) -> std::collections::hash_map::Values<'_, paste! { [<$map_name StorageIndex>] }, $value_type> {
                  self.storage.values()
              }
@@ -412,12 +454,30 @@ macro_rules! multi_index_container {
         }
 
         paste! {
+            #[doc = concat!("An iterator likey type of mutable entry handles into [`", stringify!($map_name), "`], produced by a multi-key lookup.")]
+            #[doc = ""]
+            #[doc = "Holds exclusive mutable access to the map for its lifetime `'map`, ensuring"]
+            #[doc = "no other mutable borrows can exist while entries are being traversed or modified."]
+            #[doc = ""]
+            #[doc = "Obtained from methods that look up multiple keys at once (e.g. `get_many_mut`)."]
+            #[doc = concat!("Each item yielded is a [`", stringify!($map_name), "MutEntry`], which allows in-place mutation or removal of that individual entry.")]
+            #[doc = ""]
+            #[doc = "# Notes"]
+            #[doc = "- Entries are yielded in the same order as the keys passed to the originating lookup."]
+            #[doc = "- Indices that no longer exist in the map at iteration time are silently skipped"]
+            #[doc = "  by consuming methods such as `remove_all` and `collect_values`."]
+            #[doc = ""]
+            #[doc = "# Lifetimes"]
+            #[doc = concat!("- `'map` — ties this iterator to the mutable borrow of the underlying [`", stringify!($map_name), "`], preventing any other access to the map until the iterator is dropped.")]
             $vis struct [<$map_name MutEntries>]<'map> {
                 entries: std::vec::IntoIter<[<$map_name StorageIndex>]>,
                 hashmap: &'map mut $map_name,
             }
 
             impl<'map> [<$map_name MutEntries>]<'map> {
+                /// Creates an iterator which uses a closure to determine if an element should be yielded.
+                ///
+                /// Given an element the closure must return true or false. The returned iterator will yield only the elements for which the closure returns true.
                 pub fn filter<F>(self, mut predicate: F) -> Self
                 where
                     F: FnMut(&$value_type) -> bool,
@@ -438,7 +498,8 @@ macro_rules! multi_index_container {
                         hashmap: self.hashmap,
                     }
                 }
-
+                
+                /// Get a value from the yielded results.
                 pub fn first(self) -> Option<[<$map_name MutEntry>]<'map>> {
                     let hashmap = self.hashmap;
                     self.entries
@@ -446,7 +507,8 @@ macro_rules! multi_index_container {
                         .next()
                         .map(|entry| [<$map_name MutEntry>] { entry, hashmap })
                 }
-
+                
+                /// Calls a closure on each element of an iterator.
                 pub fn for_each<F>(self, mut f: F)
                 where
                     F: for<'entry> FnMut([<$map_name MutEntry>]<'entry>),
@@ -456,7 +518,8 @@ macro_rules! multi_index_container {
                         f([<$map_name MutEntry>] { entry, hashmap });
                     }
                 }
-
+                
+                /// Searches for an element of an iterator that satisfies a predicate.
                 pub fn find<F>(self, mut predicate: F) -> Option<[<$map_name MutEntry>]<'map>>
                 where
                     F: FnMut(&$value_type) -> bool,
@@ -474,7 +537,11 @@ macro_rules! multi_index_container {
 
                     found.map(|entry| [<$map_name MutEntry>] { entry, hashmap })
                 }
-
+                
+                /// Removes all entries in this multi-entry selection from the map, returning their values.
+                ///
+                /// # Returns
+                /// A `Vec` containing the removed values, in iteration order.
                 pub fn remove_all(self) -> Vec<$value_type> {
                     let hashmap = self.hashmap;
                     self.entries
@@ -489,6 +556,10 @@ macro_rules! multi_index_container {
                         .collect()
                 }
 
+                /// Returns the last entry in this selection as a mutable entry handle, if any.
+                ///
+                /// # Returns
+                /// `Some(MutEntry)` for the last entry, or `None` if the selection is empty.
                 pub fn last(self) -> Option<[<$map_name MutEntry>]<'map>> {
                     let hashmap = self.hashmap;
                     self.entries
@@ -497,6 +568,13 @@ macro_rules! multi_index_container {
                         .map(|entry| [<$map_name MutEntry>] { entry, hashmap })
                 }
 
+                /// Returns the entry at position `n` in this selection as a mutable entry handle, if any.
+                ///
+                /// # Parameters
+                /// - `n`: Zero-based index into the selection.
+                ///
+                /// # Returns
+                /// `Some(MutEntry)` for the nth entry, or `None` if `n` is out of bounds.
                 pub fn nth(self, n: usize) -> Option<[<$map_name MutEntry>]<'map>> {
                     let hashmap = self.hashmap;
                     self.entries
@@ -505,21 +583,29 @@ macro_rules! multi_index_container {
                         .map(|entry| [<$map_name MutEntry>] { entry, hashmap })
                 }
 
+                /// Returns the number of entries in this selection.
                 #[inline]
                 pub fn count(self) -> usize {
                     self.entries.len()
                 }
 
+                /// Returns `true` if this selection contains no entries.
                 #[inline]
                 pub fn is_empty(self) -> bool {
                     self.entries.len() == 0
                 }
-                
+
+                /// Returns `true` if this selection contains at least one entry.
                 #[inline]
                 pub fn is_not_empty(self) -> bool {
                     self.entries.len() != 0
                 }
-
+                /// Collects shared references to the values of all entries in this selection.
+                ///
+                /// Entries that no longer exist in the map are silently skipped.
+                ///
+                /// # Returns
+                /// A `Vec` of references to the values, in iteration order.
                 pub fn collect_values(self) -> Vec<&'map $value_type> {
                     let hashmap = self.hashmap;
                     self.entries
@@ -537,6 +623,8 @@ macro_rules! multi_index_container {
             }
 
             impl<'map> [<$map_name MutEntry>]<'map> {
+
+                /// Remove the value from the hashmap
                 pub fn remove(&mut self) -> $value_type {
                     self.hashmap.remove(&self.entry).expect("Expected the value to exist given it is guaranteed by the mutable pointer to the hashmap while this reference is initialised.")
                 }

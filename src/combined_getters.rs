@@ -35,6 +35,8 @@ macro_rules! __multimap_combined_getters {
         remaining: []
     ) => {
         paste! {
+
+            #[doc = "Get a reference to a value, if it exist, by indexing by multiple keys."]
             $vis fn [<get_by_ $first_name _ $second_name $(  _ $more_name)*>]<'a>(
                 &'a self,
                 $first_name: &$first_key,
@@ -60,6 +62,9 @@ macro_rules! __multimap_combined_getters {
                     .into_iter()
                     .filter_map(|key| self.storage.get(&key))
             }
+
+
+            #[doc = "Get a mutable modifier for a value, if it exist, by indexing by multiple keys."]
             $vis fn [<get_mut_by_ $first_name _ $second_name $(  _ $more_name)*>](
                     &mut self,
                     $first_name: &$first_key,

@@ -1,7 +1,14 @@
 [package]
 name = "multi-index-container"
 version = "0.1.0"
+authors = ["Alvaro Sierra Castro"]
 edition = "2024"
+description = "A Rust procedural macro for collections that can be efficiently looked up, mutated, and removed by multiple indexes simultaneously"
+readme = "README.md"
+repository = "https://github.com/AlvaroSierra/multi-index-container"
+license = "MIT"
+keywords = ["multi-index", "indexmap", "hashmap", "btreemap", "collection"]
+categories = ["data-structures"]
 
 [dependencies]
 pastey = "0.2.2"
