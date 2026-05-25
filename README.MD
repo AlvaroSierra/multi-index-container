@@ -2,6 +2,8 @@
 
 A Rust procedural macro for collections that can be efficiently looked up, mutated, and removed by multiple indexes simultaneously, with compile-time guarantees that unique constraints are upheld.
 
+> While I have done my best to test it thoroughly, bugs may still be present. If you encounter any issues, bug reports are greatly appreciated.
+
 ## Overview
 
 `multi_index_container` lets you define a typed map over any struct where fields can be designated as indexes. Each index can be unique or non-unique, ordered or unordered. The macro generates all lookup, mutation, and removal methods at compile time with no runtime overhead from reflection or dynamic dispatch.
