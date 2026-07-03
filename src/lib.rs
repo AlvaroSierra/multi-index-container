@@ -279,7 +279,7 @@ macro_rules! multi_index_container {
                             .and_then(|storage_key| self.storage.get(storage_key))
                     }
 
-                    #[doc = concat!("Get a mutable modifier for a value, if it exist, by indexing by the unique ordered key `", stringify!($unique_name), "` .")]
+                    #[doc = concat!("Get a mutable modifier for a value, if it exist, by indexing by the unique ordered key `", stringify!($unique_ordered_name), "` .")]
                     pub fn [<get_mut_by_ $unique_ordered_name>](&mut self, $unique_ordered_name: &$unique_ordered_key_type) -> Option<[<$map_name MutEntry>]> {
                         let storage_key = self.$unique_ordered_name.get($unique_ordered_name)?;
                         Some([<$map_name MutEntry>] {
