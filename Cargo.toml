@@ -1,6 +1,6 @@
 [package]
 name = "multi-index-container"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Alvaro Sierra Castro"]
 edition = "2024"
 description = "A Rust procedural macro for collections that can be efficiently looked up, mutated, and removed by multiple indexes simultaneously"
